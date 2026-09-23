@@ -67,6 +67,7 @@ export class SettingsView {
         h('h3', {}, 'Display'),
         h('label', { class: 'field' }, h('span', {}, 'Note names'), notation),
         h('label', { class: 'field' }, h('span', {}, 'Sa / tonic'), tonic),
+        h('button', { class: 'link small', onClick: () => this.app.navigate('tune') }, 'Not sure? Find my Sa ›'),
         h('label', { class: 'field' }, h('span', {}, 'A4 reference (Hz)'), a4),
       ),
       h(

@@ -45,7 +45,7 @@ export class PracticeView {
         'section',
         { class: 'card' },
         h('div', { class: 'row' }, lessonSelect, tonicSelect),
-        h('div', { class: 'muted small' }, `${scaleDisplayName(scale)} · Sa = ${westernPitchClassName(prefs.tonic)}`),
+        h('div', { class: 'row space' }, h('span', { class: 'muted small' }, `${scaleDisplayName(scale)} · Sa = ${westernPitchClassName(prefs.tonic)}`), h('button', { class: 'link small', disabled: this.capture.recording, onClick: () => this.app.navigate('tune') }, 'Find my Sa ›')),
         h('p', { class: 'instructions' }, lesson.instructions),
       ),
       this.meter.el,

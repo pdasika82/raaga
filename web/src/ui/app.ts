@@ -2,11 +2,12 @@ import { BUILT_IN_LESSONS, FREE_PRACTICE, type Lesson } from '../core/lesson';
 import { LessonStore, requestPersistence } from '../storage/db';
 import { loadPrefs, savePrefs, type Prefs } from '../storage/prefs';
 import { h } from './dom';
+import { PitchFinderView } from './finder';
 import { PracticeView } from './practice';
 import { SessionDetailView, SessionsView } from './sessions';
 import { SettingsView } from './settings';
 
-export type Route = 'practice' | 'sessions' | 'session' | 'settings';
+export type Route = 'practice' | 'sessions' | 'session' | 'settings' | 'tune';
 
 export class App {
   prefs: Prefs = loadPrefs();
@@ -21,6 +22,7 @@ export class App {
   private sessions = new SessionsView(this);
   private detail = new SessionDetailView(this);
   private settings = new SettingsView(this);
+  private finder = new PitchFinderView(this);
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -85,13 +87,15 @@ export class App {
     if (m) void this.show('session', m[1]);
     else if (location.hash === '#/sessions') void this.show('sessions');
     else if (location.hash === '#/settings') void this.show('settings');
+    else if (location.hash === '#/tune') void this.show('tune');
     else void this.show('practice');
   }
 
   private async show(route: Route, id?: string): Promise<void> {
     if (this.route === 'practice' && route !== 'practice') await this.practice.leave();
+    if (this.route === 'tune' && route !== 'tune') await this.finder.leave();
     this.route = route;
-    for (const [r, btn] of this.tabs) btn.classList.toggle('active', r === route || (route === 'session' && r === 'sessions'));
+    for (const [r, btn] of this.tabs) btn.classList.toggle('active', r === route || (route === 'session' && r === 'sessions') || (route === 'tune' && r === 'practice'));
     let view: HTMLElement;
     switch (route) {
       case 'practice':
@@ -109,6 +113,10 @@ export class App {
       case 'settings':
         await this.settings.refresh();
         view = this.settings.el;
+        break;
+      case 'tune':
+        await this.finder.show();
+        view = this.finder.el;
         break;
     }
     this.content.replaceChildren(view);

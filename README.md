@@ -66,6 +66,8 @@ Packages/RaagaCore/          platform-independent Swift package with unit tests
    reinstall. A paid developer account ($99/yr) removes that limit and lets you use
    TestFlight.
 
+New to singing? Start with [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md).
+
 ## Using it
 
 1. Settings: paste your Anthropic API key, choose note names (swaras or C D E) and

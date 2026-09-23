@@ -101,3 +101,11 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); f
 .pill.active.acc-close { background: var(--close); }
 .pill.active.acc-off { background: var(--off); }
 @media (min-width: 640px) { .content { max-width: 560px; margin: 0 auto; width: 100%; } }
+
+/* Pitch finder */
+.finder-hold { width: 220px; height: 8px; margin-top: 6px; }
+.finder-hold .level-bar { background: var(--in-tune); transition: width 0.15s; }
+.finder-result .verdict { margin: 0 0 8px; font-size: 17px; }
+.ok-border { border: 1px solid rgba(61,220,132,0.5); }
+.warn-border { border: 1px solid rgba(255,159,67,0.5); }
+.link.small { font-size: 14px; }

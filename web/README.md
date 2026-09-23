@@ -4,6 +4,8 @@ The browser version of Raaga. Same features as the iOS app: live pitch against s
 and ragas, recordings with a pitch chart and score, and coaching feedback from Claude.
 Installs to the iPhone home screen from Safari with no App Store and no Xcode.
 
+New to singing? Start with [../docs/GETTING-STARTED.md](../docs/GETTING-STARTED.md).
+
 ## Run locally
 
 ```
