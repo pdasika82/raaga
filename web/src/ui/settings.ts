@@ -1,5 +1,5 @@
 import type { Lesson } from '../core/lesson';
-import { NOTATION_TITLES, SWARA_NAMES, WESTERN_NAMES, type Notation } from '../core/pitch';
+import { NOTATION_TITLES, SWARA_NAMES, WESTERN_NAMES, westernPitchClassName, type Notation } from '../core/pitch';
 import { SCALES, scaleById, scaleDisplayName, TRADITIONS } from '../core/scale';
 import { LessonStore } from '../storage/db';
 import { DEFAULT_MODEL } from '../llm/claude';
@@ -29,6 +29,9 @@ export class SettingsView {
     const tonic = h('select', { class: 'select' });
     WESTERN_NAMES.forEach((n, i) => tonic.append(h('option', { value: i, selected: i === p.tonic }, n)));
     tonic.addEventListener('change', () => this.app.setTonic(Number(tonic.value)));
+    const octave = h('select', { class: 'select' });
+    for (const o of [2, 3, 4, 5]) octave.append(h('option', { value: o, selected: o === p.saOctave }, `${westernPitchClassName(p.tonic)}${o}`));
+    octave.addEventListener('change', () => this.app.update({ saOctave: Number(octave.value) }));
 
     const a4 = h('input', { class: 'input', type: 'number', min: 415, max: 466, step: 1, value: p.a4 }) as HTMLInputElement;
     a4.addEventListener('change', () => this.app.update({ a4: Number(a4.value) || 440 }));
@@ -66,8 +69,9 @@ export class SettingsView {
         { class: 'card' },
         h('h3', {}, 'Display'),
         h('label', { class: 'field' }, h('span', {}, 'Note names'), notation),
-        h('label', { class: 'field' }, h('span', {}, 'Sa / tonic'), tonic),
-        h('button', { class: 'link small', onClick: () => this.app.navigate('tune') }, 'Not sure? Find my Sa ›'),
+        h('label', { class: 'field' }, h('span', {}, 'Sa'), tonic),
+        h('label', { class: 'field' }, h('span', {}, 'Starting note'), octave),
+        h('button', { class: 'link small', onClick: () => this.app.navigate('tune') }, 'Not sure? Find comfortable Sa ›'),
         h('label', { class: 'field' }, h('span', {}, 'A4 reference (Hz)'), a4),
       ),
       h(
@@ -79,6 +83,8 @@ export class SettingsView {
       h(
         'section',
         { class: 'card' },
+        h('h3', {}, 'First-time guide'),
+        h('button', { class: 'link small', onClick: () => this.app.update({ onboarded: false }) }, 'Show the three-step introduction on Practice again ›'),
         h('h3', {}, 'Install on iPhone'),
         h('p', { class: 'muted small' }, 'In Safari tap Share, then "Add to Home Screen". Installed apps keep their data and open full screen.'),
         h('p', { class: 'muted tiny' }, 'Raaga listens to your voice, shows how close each note is to the chosen scale or raga, and saves your practice so a coach model can review it.'),
@@ -87,7 +93,9 @@ export class SettingsView {
   }
 
   private editLesson(existing: Lesson | null): void {
-    const lesson: Lesson = existing ? { ...existing } : { id: crypto.randomUUID(), title: '', instructions: '', scaleId: 'shankarabharanam', isBuiltIn: false };
+    const lesson: Lesson = existing ? { ...existing } : { id: crypto.randomUUID(), title: '', instructions: '', scaleId: 'shankarabharanam', isBuiltIn: false, sequence: '', hold: 0.8 };
+    const sequence = h('input', { class: 'input', placeholder: "e.g. S R G M P D N S' S' N D P M G R S", value: lesson.sequence ?? '' }) as HTMLInputElement;
+    const hold = h('input', { class: 'input', type: 'number', min: 0.3, max: 10, step: 0.1, value: lesson.hold ?? 0.8 }) as HTMLInputElement;
     const title = h('input', { class: 'input', placeholder: 'e.g. Alankaram 3 in Mayamalavagowla', value: lesson.title }) as HTMLInputElement;
     const instructions = h('textarea', { class: 'input', rows: 4, placeholder: 'What to sing' }) as HTMLTextAreaElement;
     instructions.value = lesson.instructions;
@@ -116,6 +124,8 @@ export class SettingsView {
         h('label', { class: 'field col' }, h('span', {}, 'Title'), title),
         h('label', { class: 'field col' }, h('span', {}, 'What to sing'), instructions),
         h('label', { class: 'field col' }, h('span', {}, 'Judge against'), scaleSel, degrees),
+        h('label', { class: 'field col' }, h('span', {}, 'Swara sequence (optional; the app prompts each note)'), sequence, h('span', { class: 'muted tiny' }, "Use S R G M P D N. Add ' for the upper octave (S') and , for the lower (N,). Leave empty for free singing.")),
+        h('label', { class: 'field' }, h('span', {}, 'Hold each note (seconds)'), hold),
         status,
         h(
           'div',
@@ -130,7 +140,7 @@ export class SettingsView {
                   status.textContent = 'Give the lesson a title.';
                   return;
                 }
-                await LessonStore.save({ ...lesson, title: title.value.trim(), instructions: instructions.value.trim(), scaleId: scaleSel.value });
+                await LessonStore.save({ ...lesson, title: title.value.trim(), instructions: instructions.value.trim(), scaleId: scaleSel.value, sequence: sequence.value.trim() || undefined, hold: Number(hold.value) || 0.8 });
                 overlay.remove();
                 await this.app.reloadLessons();
               },

@@ -108,12 +108,34 @@ export class AudioCapture {
     this.recording = true;
   }
 
+  paused = false;
+
+  pauseRecording(): void {
+    if (!this.recording || !this.recorder || this.paused) return;
+    if (this.recorder.state === 'recording') this.recorder.pause();
+    this.pausedAt = performance.now();
+    this.paused = true;
+  }
+
+  resumeRecording(): void {
+    if (!this.recording || !this.recorder || !this.paused) return;
+    if (this.recorder.state === 'paused') this.recorder.resume();
+    // shift the clock so paused time does not count
+    const gap = performance.now() - this.pausedAt;
+    this.recordStartTime += gap;
+    this.recordStartFrame += Math.round((gap / 1000) * this.sampleRate);
+    this.paused = false;
+  }
+
+  private pausedAt = 0;
+
   async endRecording(): Promise<RecordingResult | null> {
     if (!this.recording || !this.recorder) return null;
     const recorder = this.recorder;
     const duration = this.elapsed;
     const samples = this.samples;
     this.recording = false;
+    this.paused = false;
     const blob = await new Promise<Blob>((resolve) => {
       recorder.onstop = () => resolve(new Blob(this.chunks, { type: recorder.mimeType || this.mime || 'audio/webm' }));
       recorder.stop();
@@ -141,7 +163,7 @@ export class AudioCapture {
     this.lastFrame = frameIndex + 2048;
     const frame = this.detector.analyze(block);
     this.frame = frame;
-    if (this.recording) {
+    if (this.recording && !this.paused) {
       const t = Math.max(0, (frameIndex - this.recordStartFrame) / this.sampleRate);
       this.samples.push({ t, hz: frame.frequency ?? 0, clarity: frame.clarity, rms: frame.rms });
     }

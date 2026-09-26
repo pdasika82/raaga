@@ -1,4 +1,6 @@
 import { BUILT_IN_LESSONS, FREE_PRACTICE, type Lesson } from '../core/lesson';
+import { scaleById } from '../core/scale';
+import type { PracticeSession } from '../core/session';
 import { LessonStore, requestPersistence } from '../storage/db';
 import { loadPrefs, savePrefs, type Prefs } from '../storage/prefs';
 import { h } from './dom';
@@ -12,6 +14,8 @@ export type Route = 'practice' | 'sessions' | 'session' | 'settings' | 'tune';
 export class App {
   prefs: Prefs = loadPrefs();
   lessons: Lesson[] = [...BUILT_IN_LESSONS, FREE_PRACTICE];
+  /** A one-off exercise built from a review suggestion; not persisted. */
+  drill: Lesson | null = null;
 
   private root: HTMLElement;
   private content = h('main', { class: 'content' });
@@ -48,7 +52,37 @@ export class App {
   }
 
   lesson(): Lesson {
-    return this.lessons.find((l) => l.id === this.prefs.lessonId) ?? this.lessons[0];
+    return this.drill ?? this.lessons.find((l) => l.id === this.prefs.lessonId) ?? this.lessons[0];
+  }
+
+  /** Lessons grouped for the picker: Carnatic first, then Hindustani, Western, custom. */
+  lessonGroups(): { label: string; lessons: Lesson[] }[] {
+    const groups: { label: string; lessons: Lesson[] }[] = [];
+    const push = (label: string, ls: Lesson[]) => { if (ls.length) groups.push({ label, lessons: ls }); };
+    const byTradition = (tr: string) => this.lessons.filter((l) => l.isBuiltIn && l.id !== FREE_PRACTICE.id && scaleById(l.scaleId).tradition === tr);
+    push('Carnatic', byTradition('Carnatic'));
+    push('Hindustani', byTradition('Hindustani'));
+    push('Western', byTradition('Western'));
+    push('My lessons', this.lessons.filter((l) => !l.isBuiltIn));
+    push('Other', [FREE_PRACTICE]);
+    return groups;
+  }
+
+  /** Start a focus drill: a short sequence judged against the session's scale, with its Sa. */
+  startDrill(session: PracticeSession, sequence: string, title: string, hold = 1): void {
+    this.drill = { id: `drill-${Date.now()}`, title, instructions: `Sing ${sequence.replace(/'/g, '˙').replace(/,/g, '̣')} slowly. Hold each note until it turns green, then move on.`, scaleId: session.scaleId, isBuiltIn: false, sequence, hold };
+    if (this.prefs.tonic !== session.tonic) this.update({ tonic: session.tonic });
+    this.goPractice();
+  }
+
+  clearDrill(): void {
+    this.drill = null;
+    this.practice?.refresh();
+  }
+
+  private goPractice(): void {
+    if (this.route === 'practice') this.practice.refresh();
+    else this.navigate('practice');
   }
 
   update(patch: Partial<Prefs>): void {

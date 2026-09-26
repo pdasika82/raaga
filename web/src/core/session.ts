@@ -10,6 +10,21 @@ export interface PitchSample {
   rms: number;
 }
 
+/** One expected note in a guided exercise and how the singer met it. */
+export interface TargetMark {
+  index: number;
+  token: string;
+  /** absolute MIDI once the singer's Sa octave was known */
+  midi: number | null;
+  /** seconds into the recording when this became the target */
+  start: number;
+  /** seconds when it was matched, or null if skipped/unfinished */
+  matchedAt: number | null;
+  /** signed cents at the moment of matching */
+  cents: number | null;
+  attempts: number;
+}
+
 export interface PracticeSession {
   id: string;
   /** ISO date */
@@ -25,6 +40,9 @@ export interface PracticeSession {
   /** MIME type of the stored recording blob */
   audioMime: string;
   samples: PitchSample[];
+  mode?: 'guided' | 'free';
+  lessonSequence?: string[];
+  targets?: TargetMark[];
   userNote?: string;
   feedback?: string;
   feedbackDate?: string;
@@ -39,6 +57,9 @@ export function newSession(args: {
   duration: number;
   audioMime: string;
   samples: PitchSample[];
+  mode?: 'guided' | 'free';
+  lessonSequence?: string[];
+  targets?: TargetMark[];
 }): PracticeSession {
   return {
     id: args.id,
@@ -52,5 +73,8 @@ export function newSession(args: {
     duration: args.duration,
     audioMime: args.audioMime,
     samples: args.samples,
+    mode: args.mode,
+    lessonSequence: args.lessonSequence,
+    targets: args.targets,
   };
 }

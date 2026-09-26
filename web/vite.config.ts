@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'Raaga',
         short_name: 'Raaga',
         description: 'Singing practice: live pitch against scales and ragas, recordings, and coach feedback.',
-        theme_color: '#5a2a8c',
-        background_color: '#120a1c',
+        theme_color: '#7b3f6e',
+        background_color: '#faf9fb',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

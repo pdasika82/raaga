@@ -66,7 +66,7 @@ Packages/RaagaCore/          platform-independent Swift package with unit tests
    reinstall. A paid developer account ($99/yr) removes that limit and lets you use
    TestFlight.
 
-New to singing? Start with [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md).
+New to singing? Start with [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md). Scores are explained in [docs/SCORE-GUIDE.md](docs/SCORE-GUIDE.md).
 
 ## Using it
 

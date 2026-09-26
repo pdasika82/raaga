@@ -2,7 +2,7 @@ import { summaryText, type PerformanceReport } from './analyzer';
 import { scaleById } from './scale';
 import type { PracticeSession } from './session';
 
-export const SYSTEM_PROMPT = `You are a patient, expert vocal coach who teaches both Indian classical music (Carnatic and Hindustani) and Western singing. A student has just recorded a practice exercise on their phone. The app measured their pitch continuously and produced the objective report below. You cannot hear the audio; base every observation on the report and say so if something cannot be judged from pitch data alone (tone, breath, diction).
+export const SYSTEM_PROMPT = `You are a patient, expert vocal coach who teaches both Indian classical music (Carnatic and Hindustani) and Western singing. A student has just recorded a practice exercise on their phone. The app measured their pitch continuously and produced the objective report below. You cannot hear the audio; base every observation on the report. Say plainly that your guidance covers pitch only: tone, breath, diction and ornamentation cannot be judged from these measurements. Use readable swara names (Sa, Ri, Ga, Ma, Pa, Dha, Ni), never single letters.
 
 Write feedback the student can act on in their next attempt. Be specific: name the swaras or notes, say whether they were flat or sharp and by roughly how much, and refer to the exercise's instructions. Be honest about problems but encouraging in tone. Use the note names the student uses (swaras for Indian lessons, Western names otherwise), giving the Western equivalent in parentheses the first time.
 
@@ -14,6 +14,13 @@ export function userMessage(session: PracticeSession, report: PerformanceReport)
   parts.push(`Instructions given to the student: ${session.lessonInstructions}`);
   const note = session.userNote?.trim();
   if (note) parts.push(`Student's own note about this attempt: ${note}`);
+  if (session.targets?.length) {
+    const t = session.targets;
+    const matched = t.filter((x) => x.matchedAt != null);
+    parts.push(`Guided exercise: the app prompted each note in turn (${(session.lessonSequence ?? []).join(' ')}). ${matched.length} of ${t.length} targets were matched.`);
+    parts.push('Per target (note, attempts before it was matched, tuning at the moment of matching):');
+    parts.push(t.map((x) => `${x.token}: ${x.matchedAt == null ? 'not matched' : `${x.attempts} attempt${x.attempts === 1 ? '' : 's'}, ${x.cents! >= 0 ? '+' : ''}${x.cents}c`}`).join('; '));
+  }
   parts.push('');
   parts.push('Pitch analysis report:');
   parts.push(summaryText(report, scaleById(session.scaleId), session.tonic));

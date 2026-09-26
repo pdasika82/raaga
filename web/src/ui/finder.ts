@@ -1,107 +1,128 @@
 import { AudioCapture } from '../audio/capture';
-import { hzFromMidi, midiFromHz, pitchClass, SWARA_NAMES, westernName, westernPitchClassName, type PitchFrame } from '../core/pitch';
+import { midiFromHz, westernName, westernPitchClassName, type PitchFrame } from '../core/pitch';
+import { scaleById } from '../core/scale';
+import { resolveDegrees, startingMidi } from '../core/swara';
 import type { App } from './app';
 import { clear, h } from './dom';
+import { showAdjustSheet } from './setup';
+import { playPhrase, playTone } from './tone';
 
-interface Step {
-  swara: string;
-  title: string;
-  hint: string;
-  /** semitones above Sa; 0 for Sa itself */
-  offset: number;
-}
+type Step = 'hum' | 'hear' | 'range' | 'confirm';
 
-const STEPS: Step[] = [
-  { swara: 'S', title: 'Sing Sa', hint: 'Your home note. Sing "aa" on the most comfortable, relaxed pitch you have, and hold it steady.', offset: 0 },
-  { swara: 'R', title: 'Sing Ri', hint: 'Two half-steps above your Sa. Tap "Hear it" if you are unsure, then match it.', offset: 2 },
-  { swara: 'G', title: 'Sing Ga', hint: 'Four half-steps above Sa, the bright third.', offset: 4 },
-  { swara: 'P', title: 'Sing Pa', hint: 'Seven half-steps above Sa. After Sa this is the most stable note; it should feel like it locks in.', offset: 7 },
-  { swara: 'Ṡ', title: 'Sing upper Sa', hint: 'One octave above your Sa. If this strains, your Sa is probably set too high.', offset: 12 },
-];
-
-interface Result {
-  step: Step;
-  midi: number;
-  verdict: string;
-  ok: boolean;
-}
-
-/** Guided pitch check: sing a prompted swara, hold it, hear where you landed. */
+/** Guided "Find comfortable Sa": hum, hear a suggestion, check the range, confirm. */
 export class PitchFinderView {
   readonly el = h('div', { class: 'view' });
   private capture = new AudioCapture();
   private unsub: (() => void) | null = null;
-  private stepIndex = 0;
-  private saMidi: number | null = null;
-  private results: Result[] = [];
-  private recent: number[] = [];
-  private voicedFrames = 0;
-  private listening = false;
-  private muteUntil = 0;
-  private toneCtx: AudioContext | null = null;
-
-  private live = h('div', { class: 'meter-note' }, '—');
-  private liveSub = h('div', { class: 'meter-sub' }, '');
-  private hold = h('div', { class: 'level-bar' });
-  private panel = h('div', { class: 'finder-panel' });
+  private step: Step = 'hum';
+  private hums: number[] = [];
+  private window: { at: number; midi: number }[] = [];
+  private suggested = 55; // MIDI of the suggested starting note
+  private rangeAnswers: { high?: 'ok' | 'high'; low?: 'ok' | 'low' } = {};
+  private live = h('div', { class: 'target-name' }, '—');
+  private liveSub = h('div', { class: 'muted small' }, '');
+  private bar = h('div', { class: 'level-bar hold-fill' });
   private status = h('div', { class: 'status' });
+  private muteUntil = 0;
 
   constructor(private app: App) {}
 
   async show(): Promise<void> {
-    this.stepIndex = 0;
-    this.saMidi = null;
-    this.results = [];
+    this.step = 'hum';
+    this.hums = [];
+    this.window = [];
+    this.rangeAnswers = {};
     this.render();
     this.unsub?.();
     this.unsub = this.capture.onFrame((f) => this.onFrame(f));
   }
 
   async leave(): Promise<void> {
-    this.listening = false;
     this.unsub?.();
     this.unsub = null;
     await this.capture.stop();
   }
 
-  private get step(): Step {
-    return STEPS[this.stepIndex];
+  private get sa(): { tonic: number; saOctave: number } {
+    return { tonic: ((this.suggested % 12) + 12) % 12, saOctave: Math.floor(this.suggested / 12) - 1 };
   }
 
   private render(): void {
-    const step = this.step;
-    const target = this.saMidi != null && step.offset > 0 ? this.saMidi + step.offset : null;
-    clear(this.el).append(h('div', { class: 'view' },
-      h('button', { class: 'link', onClick: () => this.app.navigate('practice') }, '‹ Practice'),
-      h(
-        'section',
-        { class: 'card' },
-        h('div', { class: 'muted small' }, `Step ${this.stepIndex + 1} of ${STEPS.length}`),
-        h('h2', {}, step.title),
-        h('p', { class: 'instructions' }, step.hint),
-        target != null
-          ? h('div', { class: 'row' }, h('button', { class: 'btn btn-secondary', onClick: () => this.playTone(target) }, '🔊 Hear it'), h('span', { class: 'muted small' }, `Target: ${westernName(target)} · ${hzFromMidi(target).toFixed(0)} Hz`))
-          : null,
-      ),
-      h(
-        'section',
-        { class: 'card meter' },
-        this.live,
-        this.liveSub,
-        h('div', { class: 'level finder-hold' }, this.hold),
-        h('div', { class: 'muted tiny' }, 'Hold the note until the bar fills'),
-        !this.capture.running
-          ? h('button', { class: 'btn', onClick: () => this.startListening() }, 'Start listening')
-          : null,
-        this.status,
-      ),
-      this.panel,
-      this.results.length ? this.summary() : null,
-    ));
-    if (this.capture.running) this.beginStep();
+    const { prefs } = this.app;
+    clear(this.el);
+    const back = h('button', { class: 'link', onClick: () => this.app.navigate('practice') }, '‹ Practice');
+    const steps = ['Hum', 'Hear', 'Range', 'Confirm'];
+    const idx = ['hum', 'hear', 'range', 'confirm'].indexOf(this.step);
+    const crumbs = h('div', { class: 'crumbs' }, ...steps.map((s, i) => h('span', { class: i === idx ? 'crumb current' : i < idx ? 'crumb done' : 'crumb' }, s)));
+
+    if (this.step === 'hum') {
+      this.el.append(back, h('section', { class: 'card' },
+        h('h2', {}, 'Find a comfortable Sa'),
+        crumbs,
+        h('p', {}, `Hum a relaxed note and hold it. Any note is fine. Three hums, ${3 - this.hums.length} to go.`),
+        h('div', { class: 'center' }, this.live, this.liveSub, h('div', { class: 'level hold-track' }, this.bar)),
+        !this.capture.running ? h('button', { class: 'btn', onClick: () => this.start() }, 'Start listening') : null,
+        this.hums.length ? h('div', { class: 'muted small' }, 'Heard: ' + this.hums.map((m) => westernName(Math.round(m))).join(', ')) : null,
+        this.status));
+      return;
+    }
+    const s = this.sa;
+    const start = startingMidi(s.tonic, s.saOctave);
+    const deg = resolveDegrees(scaleById('shankarabharanam'));
+    const phrase = ['S', 'R', 'G', 'P', 'S'].map((f) => start + (deg[f as keyof typeof deg] ?? 0));
+    if (this.step === 'hear') {
+      this.el.append(back, h('section', { class: 'card' },
+        h('h2', {}, 'Hear the suggestion'),
+        crumbs,
+        h('div', { class: 'kv' }, h('span', { class: 'muted' }, 'Suggested Sa'), h('span', { class: 'kv-val' }, `${westernPitchClassName(s.tonic)} · starting note ${westernName(start)}`)),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn-secondary', onClick: () => void playTone(start, prefs.a4, 1.5) }, '▶ Play Sa'),
+          h('button', { class: 'btn btn-secondary', onClick: () => void playPhrase(phrase, prefs.a4, 0.6) }, '▶ Sa Ri Ga Pa Sa')),
+        h('p', { class: 'muted small' }, 'Sing along once. Then check the range.'),
+        h('div', { class: 'row' }, h('button', { class: 'btn', onClick: () => { this.step = 'range'; this.render(); } }, 'Next'))));
+      return;
+    }
+    if (this.step === 'range') {
+      const hi = start + 12, lo = start - 5;
+      const ask = (label: string, midi: number, key: 'high' | 'low') => h('div', { class: 'range-row' },
+        h('div', {}, h('div', {}, label), h('div', { class: 'muted small' }, westernName(midi))),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn-secondary btn-sm', onClick: () => void playTone(midi, prefs.a4, 1.2) }, '▶'),
+          h('button', { class: `btn btn-sm ${this.rangeAnswers[key] === 'ok' ? '' : 'btn-secondary'}`, onClick: () => { this.rangeAnswers[key] = 'ok'; this.render(); } }, 'Comfortable'),
+          h('button', { class: `btn btn-sm ${this.rangeAnswers[key] && this.rangeAnswers[key] !== 'ok' ? '' : 'btn-secondary'}`, onClick: () => { if (key === 'high') this.rangeAnswers.high = 'high'; else this.rangeAnswers.low = 'low'; this.render(); } }, key === 'high' ? 'Too high' : 'Too low')));
+      const both = this.rangeAnswers.high && this.rangeAnswers.low;
+      this.el.append(back, h('section', { class: 'card' },
+        h('h2', {}, 'Check the range'),
+        crumbs,
+        h('p', {}, 'Play each note, sing it, and say how it felt.'),
+        ask('Highest note of the lesson (upper Sa)', hi, 'high'),
+        ask('Lowest note (Pa below Sa)', lo, 'low'),
+        both ? h('div', { class: 'row' }, h('button', { class: 'btn', onClick: () => this.applyRange() }, 'Next')) : null));
+      return;
+    }
+    this.el.append(back, h('section', { class: 'card' },
+      h('h2', {}, 'Confirm'),
+      crumbs,
+      h('div', { class: 'kv' }, h('span', { class: 'muted' }, 'Suggested Sa'), h('span', { class: 'kv-val' }, westernPitchClassName(s.tonic))),
+      h('div', { class: 'kv' }, h('span', { class: 'muted' }, 'Starting note'), h('span', { class: 'kv-val' }, westernName(start))),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn btn-secondary', onClick: () => void playPhrase([start, ...phrase.slice(1)], prefs.a4, 0.6) }, '▶ Hear & try'),
+        h('button', { class: 'btn', onClick: () => { this.app.update({ tonic: s.tonic, saOctave: s.saOctave }); this.app.navigate('practice'); } }, 'Use this setting'),
+        h('button', { class: 'btn btn-secondary', onClick: () => showAdjustSheet(this.app, s, () => this.app.navigate('practice')) }, 'Adjust')),
+      h('p', { class: 'muted small' }, 'Keep it fixed for a few weeks so your ear learns the intervals. A teacher\'s setting can be entered under Adjust.')));
   }
 
-  private async startListening(): Promise<void> {
+  private applyRange(): void {
+    let start = this.suggested;
+    if (this.rangeAnswers.high === 'high' && this.rangeAnswers.low === 'low') { /* narrow range: keep */ }
+    else if (this.rangeAnswers.high === 'high') start -= 2;
+    else if (this.rangeAnswers.low === 'low') start += 2;
+    this.suggested = start;
+    this.step = 'confirm';
+    this.render();
+  }
+
+  private async start(): Promise<void> {
     this.status.textContent = 'Starting microphone…';
     try {
       await this.capture.start();
@@ -112,144 +133,38 @@ export class PitchFinderView {
     }
   }
 
-  private beginStep(): void {
-    this.recent = [];
-    this.voicedFrames = 0;
-    this.listening = true;
-    clear(this.panel);
-    this.hold.style.width = '0%';
-    this.live.textContent = '—';
-    this.live.className = 'meter-note';
-    this.liveSub.textContent = 'Listening…';
-  }
-
   private onFrame(f: PitchFrame): void {
-    if (!this.listening || performance.now() < this.muteUntil) return;
-    if (f.frequency == null || f.clarity < 0.6 || f.rms < 0.01) {
-      if (this.recent.length === 0) this.liveSub.textContent = 'Listening… sing and hold';
-      return;
+    if (this.step !== 'hum' || performance.now() < this.muteUntil) return;
+    const now = performance.now();
+    const voiced = f.frequency != null && f.clarity >= 0.5 && f.rms >= 0.008;
+    if (voiced) {
+      const midi = midiFromHz(f.frequency!, this.app.prefs.a4);
+      this.window.push({ at: now, midi });
+      this.live.textContent = westernName(Math.round(midi));
+      this.liveSub.textContent = `${f.frequency!.toFixed(0)} Hz`;
+    } else if (this.window.length && now - this.window[this.window.length - 1].at > 600) {
+      this.window = [];
+      this.bar.style.width = '0%';
     }
-    const midi = midiFromHz(f.frequency, this.app.prefs.a4);
-    this.recent.push(midi);
-    if (this.recent.length > 60) this.recent.shift();
-    this.voicedFrames++;
-
-    // Live readout relative to Sa when we have one
-    const chroma = Math.round(midi);
-    const cents = Math.round((midi - chroma) * 100);
-    this.live.textContent = this.saMidi != null ? SWARA_NAMES[pitchClass(chroma - this.saMidi)] : westernName(chroma);
-    this.liveSub.textContent = `${westernName(chroma)} · ${f.frequency.toFixed(0)} Hz · ${cents >= 0 ? '+' : ''}${cents} ¢`;
-
-    // Stability: 80% of the last ~1.7 s within ±50 cents of the median
-    const need = 40;
-    const window = this.recent.slice(-need);
-    const sorted = [...window].sort((a, b) => a - b);
+    this.window = this.window.filter((w) => now - w.at <= 1400);
+    const sorted = this.window.map((w) => w.midi).sort((a, b) => a - b);
+    if (!sorted.length) return;
     const median = sorted[sorted.length >> 1];
-    const steady = window.filter((m) => Math.abs(m - median) <= 0.5);
-    const progress = Math.min(1, (steady.length / need) * (window.length >= need ? 1 : window.length / need));
-    this.hold.style.width = `${Math.round(progress * 100)}%`;
-
-    if (window.length >= need && steady.length >= need * 0.8) {
-      const value = steady.reduce((a, b) => a + b, 0) / steady.length;
-      this.finishStep(value);
-    } else if (this.voicedFrames > 200) {
-      this.listening = false;
-      this.liveSub.textContent = 'Could not get a steady note.';
-      clear(this.panel).append(h('section', { class: 'card' }, h('p', {}, 'The pitch kept moving. Take a breath, pick one note and hold it without sliding.'), h('button', { class: 'btn', onClick: () => this.beginStep() }, 'Try again')));
-    }
-  }
-
-  private finishStep(midi: number): void {
-    this.listening = false;
-    this.hold.style.width = '100%';
-    const step = this.step;
-    const chroma = Math.round(midi);
-    const cents = Math.round((midi - chroma) * 100);
-    const signed = (c: number) => `${c >= 0 ? '+' : ''}${c}`;
-    let verdict: string;
-    let ok: boolean;
-
-    if (step.offset === 0) {
-      this.saMidi = chroma;
-      const pc = westernPitchClassName(chroma);
-      verdict = `You sang ${westernName(chroma)} (${hzFromMidi(midi).toFixed(0)} Hz), ${signed(cents)} cents from ${pc}. Your Sa is ${pc}.`;
-      ok = true;
-      if (chroma < 45) verdict += ' That is very low for a singing voice; if it felt gravelly, try again a little higher.';
-      if (chroma > 69) verdict += ' That is quite high; make sure it is relaxed, not pushed.';
-    } else {
-      const target = this.saMidi! + step.offset;
-      const dev = Math.round((midi - target) * 100);
-      const targetName = `${step.swara} (${westernName(target)})`;
-      if (Math.abs(dev) <= 20) {
-        verdict = `That's ${targetName}, ${signed(dev)} cents. In tune.`;
-        ok = true;
-      } else if (Math.abs(dev) <= 50) {
-        verdict = `That's ${targetName}, but ${dev > 0 ? 'sharp' : 'flat'} by ${Math.abs(dev)} cents. Ease it ${dev > 0 ? 'down' : 'up'} a touch.`;
-        ok = false;
-      } else {
-        const semis = chroma - this.saMidi!;
-        const sungName = SWARA_NAMES[pitchClass(semis)];
-        const diff = chroma - target;
-        verdict = `You sang ${sungName} (${westernName(chroma)}), ${Math.abs(diff)} half-step${Math.abs(diff) === 1 ? '' : 's'} ${diff > 0 ? 'above' : 'below'} ${targetName}. Tap "Hear it", then match it.`;
-        ok = false;
+    const steady = this.window.filter((w) => Math.abs(w.midi - median) <= 0.6);
+    const covered = now - this.window[0].at;
+    this.bar.style.width = `${Math.round(Math.min(1, covered / 1200) * 100)}%`;
+    if (covered >= 1200 && steady.length >= 18) {
+      this.hums.push(steady.reduce((a, w) => a + w.midi, 0) / steady.length);
+      this.window = [];
+      this.muteUntil = now + 800;
+      this.bar.style.width = '0%';
+      if (this.hums.length >= 3) {
+        const s = [...this.hums].sort((a, b) => a - b);
+        this.suggested = Math.round(s[1]);
+        void this.capture.stop();
+        this.step = 'hear';
       }
-    }
-    this.results = this.results.filter((r) => r.step !== step);
-    this.results.push({ step, midi, verdict, ok });
-
-    const last = this.stepIndex === STEPS.length - 1;
-    const buttons = h('div', { class: 'row' });
-    buttons.append(h('button', { class: 'btn btn-secondary', onClick: () => this.beginStep() }, 'Try again'));
-    if (step.offset === 0) {
-      const pc = pitchClass(this.saMidi!);
-      buttons.append(h('button', { class: 'btn', onClick: () => { this.app.setTonic(pc); this.next(); } }, `Use Sa = ${westernPitchClassName(pc)} and continue`));
-    } else if (!last) {
-      buttons.append(h('button', { class: 'btn', onClick: () => this.next() }, 'Next'));
-    } else {
-      buttons.append(h('button', { class: 'btn', onClick: () => this.app.navigate('practice') }, 'Done'));
-    }
-    clear(this.panel).append(h('section', { class: `card finder-result ${ok ? 'ok-border' : 'warn-border'}` }, h('p', { class: 'verdict' }, verdict), buttons));
-    this.live.className = `meter-note ${ok ? 'acc-inTune' : 'acc-off'}`;
-    this.el.querySelector('.finder-summary')?.replaceWith(this.summary());
-    if (!this.el.querySelector('.finder-summary')) this.el.append(this.summary());
-  }
-
-  private next(): void {
-    this.stepIndex = Math.min(STEPS.length - 1, this.stepIndex + 1);
-    this.render();
-  }
-
-  private summary(): HTMLElement {
-    const sa = this.saMidi != null ? `Sa = ${westernPitchClassName(this.saMidi)} (${westernName(this.saMidi)})` : 'Sa not found yet';
-    return h(
-      'section',
-      { class: 'card finder-summary' },
-      h('h3', {}, 'So far'),
-      h('div', { class: 'small' }, sa),
-      ...this.results.map((r) => h('div', { class: `small ${r.ok ? 'ok' : 'warn'}` }, `${r.step.swara}: ${r.verdict}`)),
-    );
-  }
-
-  private playTone(midi: number): void {
-    try {
-      this.toneCtx ??= new AudioContext();
-      const ctx = this.toneCtx;
-      void ctx.resume();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = hzFromMidi(midi, this.app.prefs.a4);
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.6);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 1.7);
-      // Don't let the mic hear the reference tone as the singer's note
-      this.muteUntil = performance.now() + 1900;
-      this.recent = [];
-    } catch {
-      this.status.textContent = 'Could not play the reference tone.';
+      this.render();
     }
   }
 }

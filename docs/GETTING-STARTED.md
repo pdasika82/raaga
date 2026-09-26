@@ -25,55 +25,72 @@ it. This guide takes you from zero to your first feedback in about twenty minute
 
 Practise in a quiet room with the phone about a forearm's length from your mouth.
 
-## 2. Find your Sa (5 minutes)
+## 2. Set your pitch (5 minutes)
 
-1. On Practice, tap **Find my Sa ›** (also in Settings next to the Sa picker).
-2. Tap Start listening, then sing "aa" on a comfortable, relaxed pitch, neither low
-   and gravelly nor high and strained. Hold it until the green bar fills.
-3. The app tells you what you sang, for example "You sang C3 (131 Hz). Your Sa is C".
-   Tap **Use Sa = C and continue**.
-4. It then asks for Ri, Ga, Pa and the upper Sa in turn. Tap **Hear it** to hear each
-   target, sing it, and read the verdict: in tune, sharp or flat, or a different note.
-   If the upper Sa strains, come back and pick a Sa one or two letters lower.
-5. Sa is now set. Repeat this any time it feels wrong; keep it fixed once it feels
-   right.
+Two settings decide where every exercise sits. Both are on the Practice screen under
+**Pitch setup**.
 
-Typical ranges: men C to D♯, women G to A♯. Yours may differ; trust the test.
+- **Your Sa**: the note name, such as G. Every swara is measured from it.
+- **Starting note**: how high or low you sing that Sa, such as G3. The exercise's
+  highest note is one octave above it.
 
-## 3. Read the meter
+Tap **Find comfortable Sa** and follow the four steps: hum a relaxed note three
+times, hear the suggested Sa and a short phrase, sing the lesson's highest and lowest
+notes and say whether they felt comfortable, then confirm. **Adjust** sets the two
+values separately, each with a preview. Keep the result fixed for a few weeks.
 
-- **Big letter**: the note you are singing, as a swara or Western name.
-- **Colour**: green is in tune, yellow slightly off, orange clearly off, red means the
-  note is not in this scale at all (the small line names the nearest note that is).
-- **Needle and cents**: how far you are from the note. The scale runs from −50
-  (flat) to +50 (sharp); 100 cents is one whole step to the next note. Aim for the
-  green band, which is within 10 cents.
-- **Pills** (S R G m P D N Ṡ): the notes of the scale. The one you are on lights up.
-- **Thin bar**: your volume. If it barely moves, sing louder or move closer.
+## 3. Practise
 
-## 4. Your first lessons
+1. Pick a lesson. The tiles show the swaras it will ask for, in order.
+2. Tap **Start practice**. After a three-second countdown the app records and shows
+   the first swara to sing, for example **Sa**, with "Hold each note for 1 second".
+3. Sing it. The box under the swara says what to do:
+   - **On pitch · Hold it**: stay until the tile turns green and the next swara appears.
+   - **A little low · Raise your pitch slightly** (or high / lower).
+   - **That didn't match Sa · Listen to the reference and try again**: the target
+     plays once; sing it again. Your Sa does not change during an exercise.
+   - **Can't hear clearly**: sing a steady "aa", a little louder.
+4. **Play Sa** plays the target. **Pause** stops the recording without ending it.
+   **Skip note** moves on. When the last swara is done the review opens, or tap
+   **Finish & review**.
 
-Do these in order. Slow is good. Ten focused minutes beats an hour of drifting.
+**Pitch details** below the card shows the target (S · G3), what was detected
+("Near Sa", "Near Ri₁ (outside this scale)", or "Between Ri₁ and Ri₂"), and the
+difference in cents. The line under it names the scale's svarasthanas, for example
+Ri₂: Chatusruti Rishabham. **Recent attempts** on the right lists each judged note.
 
-1. **Sustain Sa.** Hold Sa for 8 to 10 seconds, three times. Goal: the needle stays
-   in the green and does not wobble.
-2. **Sarali Varisai 1** (or **Major scale** for the Western path). Up and down, one
-   note per second. Goal: every pill lights green in turn, no red.
-3. **Janta Varisai 1** (or **Major arpeggio**). Adds jumps and repeated notes.
+If you keep singing an octave below the starting note, the app offers once to lower
+it. Nothing else changes your settings mid-exercise.
 
-Before you sing a note, hear it in your head. If a note keeps coming out red, stop and
-hum slowly from the previous note up to it.
+## 4. Read the review
 
-## 5. Record and get feedback
+The review opens with **Your next step**: one observation ("Ri was a little high")
+and one button, such as **Practise Sa–Ri–Ga–Ri–Sa**. Tap it and the app sets up
+that short drill for you. Below that:
 
-1. Pick the lesson, tap **Record**, sing the exercise, tap **Stop**.
-2. The session opens. Check three things: the **score** (aim to raise it over time,
-   not to hit 100 today), **Notes sung** (does it match what the lesson asked for?),
-   and the **chart** (red dots are wrong notes, dots far from a line are out of tune).
-3. Write one line in **Your note** about how it felt, then tap
-   **Get feedback from Claude**. The reply names the notes that went well, the ones
-   to fix in priority order, and one drill for next time.
-4. Do that drill as your next recording.
+- **What you sang**: the recording, and a chart where shaded bands are the notes the
+  exercise asked for and dots are what you sang. Play the recording and a line moves
+  along the chart. Tap a dot to see what it was, replay just that note, hear the
+  target tone, or **Retry** that note as a drill.
+- **Explore a note**: one chip per note with a verdict (On pitch, A little high,
+  Not matched). Tap one to jump to it on the chart.
+- **Practice guidance**: tap **Get practice guidance** for a written review from
+  Claude. It works from the pitch measurements and the lesson text only, so it can
+  advise on pitch, not on tone, breath or diction. Needs your API key.
+- **Exact measurements** and **Add a practice note** are folded away at the bottom.
+
+## 5. Lessons, in order
+
+Carnatic lessons come first in the picker. A good first fortnight:
+
+1. **First notes**, until every swara is green on the first try. Shankarabharanam is
+   one common starting raga; the Mayamalavagowla version is another.
+2. **Sustain Sa**: three six-second holds.
+3. **Sarali Varisai 1**, slowly. Then Sarali 2 and Janta 1.
+4. **Mayamalavagowla** and **Mohanam** to hear different scales from the same Sa.
+
+Western lessons (major scale, arpeggio) are further down if you want them; they use
+the same Sa and the same note names unless you switch to Western names in Settings.
 
 ## 6. How to improve
 
@@ -92,3 +109,8 @@ hum slowly from the previous note up to it.
   breathy sounds; sing with a bit more energy.
 - **A drone or tanpura confuses it.** The detector follows one voice at a time. Keep any
   drone quiet or in headphones.
+
+## Appendix
+
+Every note's frequency from C2 to C6, the twelve svarasthanas with their ratios from Sa,
+and a worked example are in [PITCH-TABLE.md](PITCH-TABLE.md).
