@@ -65,7 +65,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); f
 .title { font-weight: 600; }
 .stat { display: flex; justify-content: space-between; border-top: 1px solid #2c1f42; padding-top: 6px; }
 .audio { width: 100%; }
-.chart { width: 100%; height: 240px; display: block; }
+.chart { width: 100%; height: 260px; display: block; }
 .feedback p { margin: 0 0 6px; }
 .feedback .bullet { padding-left: 12px; }
 .empty { text-align: center; padding: 40px 14px; }
@@ -109,3 +109,9 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); f
 .ok-border { border: 1px solid rgba(61,220,132,0.5); }
 .warn-border { border: 1px solid rgba(255,159,67,0.5); }
 .link.small { font-size: 14px; }
+.btn-sm { padding: 6px 12px; font-size: 15px; min-width: 40px; }
+.zoom { gap: 6px; }
+.zoom-level { min-width: 34px; text-align: center; font-variant-numeric: tabular-nums; }
+.chart { user-select: none; -webkit-user-select: none; }
+.inspector { background: #2a1c40; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.inspector[hidden] { display: none; }

@@ -1,12 +1,12 @@
 import { analyze, hasVoice, noteSequence, score, type PerformanceReport } from '../core/analyzer';
-import { westernName, westernPitchClassName } from '../core/pitch';
+import { pitchClass, SWARA_NAMES, westernName, westernPitchClassName } from '../core/pitch';
 import { SYSTEM_PROMPT, userMessage } from '../core/prompt';
-import { scaleById, scaleDisplayName } from '../core/scale';
+import { degreeName, scaleById, scaleDisplayName } from '../core/scale';
 import type { PracticeSession } from '../core/session';
 import { askCoach, describeError } from '../llm/claude';
 import { SessionStore } from '../storage/db';
 import type { App } from './app';
-import { drawPitchChart } from './chart';
+import { PitchChart, type ChartSelection } from './chart';
 import { clear, formatDate, formatTime, h, pct } from './dom';
 
 function report(s: PracticeSession): PerformanceReport {
@@ -80,6 +80,51 @@ export class SessionDetailView {
     }
 
     const canvas = h('canvas', { class: 'chart' });
+    let chart: PitchChart | null = null;
+    const inspector = h('div', { class: 'inspector', hidden: true });
+    const showSelection = (sel: ChartSelection | null) => {
+      clear(inspector);
+      if (!sel) {
+        inspector.hidden = true;
+        return;
+      }
+      inspector.hidden = false;
+      const chroma = Math.round(sel.midi);
+      const cents = Math.round((sel.midi - chroma) * 100);
+      const swara = SWARA_NAMES[pitchClass(chroma - session.tonic)];
+      const signed = (c: number) => `${c >= 0 ? '+' : ''}${c}`;
+      const inScale = scale.intervals.includes(pitchClass(chroma - session.tonic));
+      inspector.append(
+        h('div', { class: 'row space' },
+          h('div', {},
+            h('div', { class: 'title' }, `${sel.t.toFixed(2)} s · ${swara} (${westernName(chroma)}) · ${sel.hz.toFixed(1)} Hz`),
+            h('div', { class: `small acc-${sel.accuracy}` }, `${signed(cents)} ¢ from ${westernName(chroma)}${inScale ? '' : ' · not in this scale'}`),
+          ),
+          h('button', { class: 'link small', onClick: () => chart?.clearSelection() }, '✕'),
+        ),
+      );
+      if (sel.event) {
+        const e = sel.event;
+        const name = degreeName(scale, e.semitoneFromTonic, session.tonic, notation);
+        inspector.append(
+          h('div', { class: 'row space' },
+            h('div', { class: 'small muted' }, `Part of a held ${e.isScaleTone ? name : `(${name})`}: ${e.duration.toFixed(2)} s, average ${signed(Math.round(e.meanCents))} ¢, wobble ±${e.centsStdDev.toFixed(0)} ¢`),
+            h('button', { class: 'btn btn-secondary btn-sm', onClick: () => chart?.zoomToEvent(e) }, 'Zoom to note'),
+          ),
+        );
+      } else {
+        inspector.append(h('div', { class: 'small muted' }, 'A passing pitch between notes, not a held note.'));
+      }
+    };
+    const zoomLabel = h('span', { class: 'muted small zoom-level' }, '1×');
+    const zoomControls = h(
+      'div',
+      { class: 'row zoom' },
+      h('button', { class: 'btn btn-secondary btn-sm', title: 'Zoom out', onClick: () => chart?.zoom(1 / 1.5) }, '−'),
+      zoomLabel,
+      h('button', { class: 'btn btn-secondary btn-sm', title: 'Zoom in', onClick: () => chart?.zoom(1.5) }, '+'),
+      h('button', { class: 'btn btn-secondary btn-sm', onClick: () => chart?.reset() }, 'Reset'),
+    );
     const noteInput = h('textarea', { class: 'input', rows: 2, placeholder: 'How did it feel? Anything you were working on?' });
     noteInput.value = session.userNote ?? '';
     const persistNote = async () => {
@@ -149,7 +194,14 @@ export class SessionDetailView {
         h('p', { class: 'instructions' }, session.lessonInstructions),
         audio,
       ),
-      h('section', { class: 'card' }, h('h3', {}, 'Pitch'), canvas),
+      h(
+        'section',
+        { class: 'card' },
+        h('div', { class: 'row space' }, h('h3', {}, 'Pitch'), zoomControls),
+        canvas,
+        inspector,
+        h('div', { class: 'muted tiny' }, 'Tap a dot to inspect it. Pinch or scroll to zoom, drag to pan, double-tap to reset. Each held note is labelled with the swara it landed on and its tuning in cents (− flat, + sharp). Right axis shows the Western name.'),
+      ),
       h(
         'section',
         { class: 'card' },
@@ -176,6 +228,11 @@ export class SessionDetailView {
       ),
       deleteBtn,
     ));
-    requestAnimationFrame(() => drawPitchChart(canvas, session.samples, scale, session.tonic, session.a4, notation));
+    requestAnimationFrame(() => {
+      chart = new PitchChart(canvas, { samples: session.samples, scale, tonic: session.tonic, a4: session.a4, notation, events: r.events });
+      chart.onViewChange(() => (zoomLabel.textContent = `${chart!.zoomLevel.toFixed(chart!.zoomLevel < 10 ? 1 : 0)}×`));
+      chart.onSelect(showSelection);
+      chart.draw();
+    });
   }
 }
