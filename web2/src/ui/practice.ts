@@ -27,6 +27,7 @@ export class PracticeView {
   private targets: BeatTarget[] = [];
   private listened = false;
   private playing = false;
+  private listenCount: number | null = null;
   private beatIndex = -1;
   private phraseStart = 0;
   private timer: number | null = null;
@@ -181,12 +182,13 @@ export class PracticeView {
     guide.addEventListener('change', () => this.app.update({ livePitchGuide: guide.checked }));
     return h('div', { class: 'stage' },
       h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, this.example ? "TEACHER'S EXAMPLE" : 'TONE GUIDE'), h('span', { class: 'muted' }, lengthText)),
-      h('h2', {}, 'Listen to the phrase'),
+      h('h2', {}, this.listenCount != null ? 'Get ready' : this.playing ? 'Listen' : 'Listen to the phrase'),
       h('p', { class: 'lead' }, this.practice.instructions),
+      this.listenCount != null ? h('div', { class: 'count-in' }, String(this.listenCount)) : null,
       this.swaras,
-      this.listened && !this.playing
+      this.listened && !this.playing && this.listenCount == null
         ? h('div', { class: 'row', style: 'justify-content:center' }, h('button', { class: 'btn cta', onClick: () => { this.step = 'turn'; this.render(); } }, 'Your turn →'), h('button', { class: 'link', onClick: () => void this.playExample() }, 'Listen again'))
-        : h('button', { class: 'btn cta', disabled: this.playing, onClick: () => void this.playExample() }, this.playing ? 'Playing…' : '▶ Listen to example'),
+        : h('button', { class: 'btn cta', disabled: this.playing || this.listenCount != null, onClick: () => void this.playExample() }, this.listenCount != null ? `Starting in ${this.listenCount}…` : this.playing ? 'Playing…' : '▶ Listen to example'),
       h('div', { class: 'stage-foot' }, h('span', { class: 'muted small' }, 'Tap a swara to hear a reference tone.'), h('label', { class: 'toggle' }, guide, h('span', {}, 'Live pitch guide'))));
   }
 
@@ -266,7 +268,15 @@ export class PracticeView {
   // MARK: listen
 
   private async playExample(): Promise<void> {
-    if (this.playing) return;
+    if (this.playing || this.listenCount != null) return;
+    // 3-2-1 above the tiles so the listener is ready for the first note
+    for (let n = 3; n >= 1; n--) {
+      this.listenCount = n;
+      this.render();
+      await new Promise((r) => setTimeout(r, 1000));
+      if (this.step !== 'listen') { this.listenCount = null; return; }
+    }
+    this.listenCount = null;
     this.playing = true;
     this.render();
     if (this.example) {
