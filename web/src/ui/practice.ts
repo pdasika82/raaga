@@ -10,7 +10,8 @@ import type { App } from './app';
 import { clear, formatTime, h } from './dom';
 import { PitchMeter } from './meter';
 import { showPitchReference } from './reference';
-import { attemptsPanel, pitchSetupInline, showAdjustSheet } from './setup';
+import { attemptsPanel, noteGuideControl, pitchSetupInline, showAdjustSheet, tanpuraControl } from './setup';
+import { tanpura } from '../audio/tanpura';
 import { playPhrase, playTone } from './tone';
 
 type Phase = 'idle' | 'countdown' | 'recording';
@@ -72,6 +73,7 @@ export class PracticeView {
   }
 
   async leave(): Promise<void> {
+    if (tanpura.running) tanpura.stop();
     if (this.phase === 'recording') await this.finish();
     if (this.countdownTimer) window.clearInterval(this.countdownTimer);
     this.phase = 'idle';
@@ -99,11 +101,11 @@ export class PracticeView {
       for (const l of g.lessons) grp.append(h('option', { value: l.id, selected: l.id === lesson.id }, l.title));
       lessonSelect.append(grp);
     }
-    const holdText = lesson.hold ? `Hold each note for ${lesson.hold} second${lesson.hold === 1 ? '' : 's'}.` : '';
+    const holdText = !prefs.holdNotes ? 'Notes register as soon as they are steady.' : lesson.hold ? `Hold each note for ${lesson.hold} second${lesson.hold === 1 ? '' : 's'}.` : '';
     this.el.append(h('section', { class: 'card header' },
       h('div', { class: 'row space header-row' },
         h('span', { class: 'crumb-title' }, h('span', { class: 'muted' }, '⫶'), h('b', {}, 'Practice'), h('span', { class: 'divider' }), h('span', { class: 'muted' }, scale.tradition)),
-        h('span', { class: 'header-right' }, this.tunerMode ? null : pitchSetupInline(this.app, { locked: this.phase !== 'idle', scale }), recording ? this.timer : null)),
+        h('span', { class: 'header-right' }, this.tunerMode ? null : pitchSetupInline(this.app, { locked: this.phase !== 'idle', scale }), noteGuideControl(this.app), tanpuraControl(this.app), recording ? this.timer : null)),
       this.phase === 'idle' && !drill ? lessonSelect : h('h2', {}, lesson.title),
       h('div', { class: 'muted small' }, `${scale.name}${holdText ? ' · ' + holdText : ''}`),
       this.phase === 'idle' ? h('p', { class: 'instructions' }, lesson.instructions) : null,
@@ -289,11 +291,14 @@ export class PracticeView {
     this.attemptCount = 0;
     clear(this.attemptRows);
     this.attemptCount = 0;
+    this.showAllAttempts = false;
+    this.el.querySelector('.attempts .show-all')?.remove();
     this.targets = this.tokens.map((tok, i) => ({ index: i, token: tok.raw, midi: tokenMidi(tok, scale, this.saMidi), start: 0, matchedAt: null, cents: null, attempts: 0 }));
     this.render();
     this.ticker = window.setInterval(() => { if (!this.capture.paused) this.timerText.textContent = `Recording · ${formatTime(this.capture.elapsed)}`; }, 250);
     this.subscribe((f) => (this.tokens.length ? this.onGuidedFrame(f) : this.onFreeFrame(f)));
     if (!this.app.prefs.onboarded) this.app.update({ onboarded: true });
+    if (this.tokens.length) this.cueTarget();
   }
 
   private subscribe(fn: (f: PitchFrame) => void): void {
@@ -302,7 +307,7 @@ export class PracticeView {
   }
 
   private holdSeconds(): number {
-    return this.lesson.hold ?? 0.6;
+    return this.app.prefs.holdNotes ? (this.lesson.hold ?? 0.6) : 0.35;
   }
 
   private onFreeFrame(f: PitchFrame): void {
@@ -385,6 +390,7 @@ export class PracticeView {
       }
       this.targets[this.index].start = t;
       this.updateTargetHeader();
+      this.cueTarget();
       return;
     }
 
@@ -393,7 +399,7 @@ export class PracticeView {
     const steps = dev == null ? 0 : Math.round(Math.abs(dev) / 100);
     const where = dev == null ? '' : ` · ${steps >= 1 ? `${steps} step${steps > 1 ? 's' : ''}` : `${Math.abs(dev)}¢`} ${dev > 0 ? 'above' : 'below'}`;
     this.addAttempt('wrong', targetMidi == null ? targetName : this.noteText(targetName, targetMidi), `${this.noteText(sungName, mean)}${where}`);
-    this.flash = { headline: `That didn't match ${targetName}`, detail: 'Listen to the reference and try again.', kind: 'wrongNote', until: now + 1600 };
+    this.flash = { headline: `That didn't match ${targetName}`, detail: prefs.noteGuide ? 'Listen to the reference and try again.' : 'Find it against the drone and try again.', kind: 'wrongNote', until: now + 1600 };
     const nextTok = this.tokens[this.index + 1];
     const nextMidi = nextTok ? tokenMidi(nextTok, scale, this.saMidi) : null;
     const octaveOf = (m: number | null) => (m == null ? 0 : Math.abs(mean - (m - 12)) <= 0.6 ? 1 : Math.abs(mean - (m + 12)) <= 0.6 ? -1 : 0);
@@ -404,7 +410,7 @@ export class PracticeView {
     } else {
       this.octaveMisses = 0;
     }
-    if (targetMidi != null) {
+    if (targetMidi != null && prefs.noteGuide) {
       this.judgedAt = now + 1500;
       void playTone(targetMidi, prefs.a4, 1.0);
     }
@@ -428,6 +434,7 @@ export class PracticeView {
   private retarget(newStart: number): void {
     const scale = lessonScale(this.lesson);
     this.saMidi = newStart;
+    if (tanpura.running) tanpura.retune(newStart, this.app.prefs.a4);
     for (const tg of this.targets) if (tg.matchedAt == null) tg.midi = tokenMidi(this.tokens[tg.index], scale, newStart);
     this.octaveMisses = 0;
     this.updateTargetHeader();
@@ -446,10 +453,30 @@ export class PracticeView {
     }
   }
 
+  private showAllAttempts = false;
+
   private addAttempt(kind: 'ok' | 'near' | 'wrong' | 'skip', asked: string, sung: string): void {
     this.attemptRows.prepend(h('tr', { class: `attempt-${kind}` }, h('td', {}, asked), h('td', {}, sung)));
     const count = this.el.querySelector('.attempts .count');
     if (count) count.textContent = String(this.attemptCount);
+    this.trimAttempts();
+  }
+
+  /** Keep the panel short: the latest 8 rows unless expanded. */
+  private trimAttempts(): void {
+    const rows = [...this.attemptRows.children] as HTMLElement[];
+    const limit = 8;
+    rows.forEach((r, i) => { r.hidden = !this.showAllAttempts && i >= limit; });
+    let more = this.el.querySelector<HTMLButtonElement>('.attempts .show-all');
+    if (rows.length > limit) {
+      if (!more) {
+        more = h('button', { class: 'link small show-all', onClick: () => { this.showAllAttempts = !this.showAllAttempts; this.trimAttempts(); } }, '');
+        this.attempts.after(more);
+      }
+      more.textContent = this.showAllAttempts ? 'Show latest 8' : `Show all ${rows.length}`;
+    } else if (more) {
+      more.remove();
+    }
   }
 
   /** "Ri · D4 · 294 Hz" */
@@ -479,6 +506,7 @@ export class PracticeView {
     this.index = i;
     this.targets[i].start = this.capture.elapsed;
     this.updateTargetHeader();
+    this.cueTarget();
   }
 
   /** Start the sequence over; the recording keeps running, attempts so far are dropped. */
@@ -527,6 +555,18 @@ export class PracticeView {
     if (this.index >= this.tokens.length) { void this.finish(); return; }
     this.targets[this.index].start = this.capture.elapsed;
     this.updateTargetHeader();
+    this.cueTarget();
+  }
+
+  /** With the note guide on, play the current target and hold judging until it has finished. */
+  private cueTarget(): void {
+    if (!this.app.prefs.noteGuide || this.phase !== 'recording') return;
+    const tok = this.tokens[this.index];
+    const midi = tok ? tokenMidi(tok, lessonScale(this.lesson), this.saMidi) : null;
+    if (midi == null) return;
+    this.window = [];
+    this.judgedAt = performance.now() + 1100;
+    void playTone(midi, this.app.prefs.a4, 1.0);
   }
 
   private async playTarget(): Promise<void> {

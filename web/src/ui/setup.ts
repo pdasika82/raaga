@@ -4,6 +4,7 @@ import type { App } from './app';
 import { h } from './dom';
 import { showPitchReference } from './reference';
 import { playTone } from './tone';
+import { tanpura } from '../audio/tanpura';
 import type { Scale } from '../core/scale';
 
 /** Compact pitch setup for the header: Sa, starting note, reference, Adjust, Find comfortable Sa. */
@@ -17,6 +18,48 @@ export function pitchSetupInline(app: App, opts: { locked: boolean; scale?: Scal
     h('button', { class: 'link small', disabled: opts.locked, onClick: () => showAdjustSheet(app) }, 'Adjust'),
     h('button', { class: 'link small find-sa', disabled: opts.locked, onClick: () => app.navigate('tune') }, 'Find comfortable Sa →'),
   );
+}
+
+/** Tanpura toggle with a volume slider; the drone follows Sa and the starting note. */
+export function tanpuraControl(app: App): HTMLElement {
+  const { prefs } = app;
+  const slider = h('input', { type: 'range', min: 0, max: 1, step: 0.05, value: prefs.tanpuraVolume, class: 'tanpura-vol', title: 'Tanpura volume', 'aria-label': 'Tanpura volume', hidden: !tanpura.running }) as HTMLInputElement;
+  const btn = h('button', { class: `link small tanpura-btn${tanpura.running ? ' on' : ''}`, 'aria-pressed': tanpura.running ? 'true' : 'false' }, tanpura.running ? '♫ Tanpura on' : '♫ Tanpura');
+  btn.addEventListener('click', () => {
+    if (tanpura.running) {
+      tanpura.stop();
+      btn.textContent = '♫ Tanpura';
+      btn.classList.remove('on');
+      btn.setAttribute('aria-pressed', 'false');
+      slider.hidden = true;
+    } else {
+      tanpura.volume = app.prefs.tanpuraVolume;
+      tanpura.start(startingMidi(app.prefs.tonic, app.prefs.saOctave), app.prefs.a4);
+      btn.textContent = '♫ Tanpura on';
+      btn.classList.add('on');
+      btn.setAttribute('aria-pressed', 'true');
+      slider.hidden = false;
+    }
+  });
+  slider.addEventListener('input', () => {
+    const v = Number(slider.value);
+    tanpura.volume = v;
+    app.update({ tanpuraVolume: v });
+  });
+  return h('span', { class: 'tanpura' }, btn, slider);
+}
+
+/** Note guide toggle: whether the app plays each target note automatically. */
+export function noteGuideControl(app: App): HTMLElement {
+  const label = () => (app.prefs.noteGuide ? '♪ Note guide on' : '♪ Note guide off');
+  const btn = h('button', { class: `link small guide-btn${app.prefs.noteGuide ? ' on' : ''}`, 'aria-pressed': app.prefs.noteGuide ? 'true' : 'false', title: 'On: each target note is played for you. Off: practise from the drone alone.' }, label());
+  btn.addEventListener('click', () => {
+    app.update({ noteGuide: !app.prefs.noteGuide });
+    btn.textContent = label();
+    btn.classList.toggle('on', app.prefs.noteGuide);
+    btn.setAttribute('aria-pressed', app.prefs.noteGuide ? 'true' : 'false');
+  });
+  return btn;
 }
 
 /** Always-open attempts panel. */
@@ -52,7 +95,7 @@ export function showAdjustSheet(app: App, initial?: { tonic: number; saOctave: n
     preview,
     h('div', { class: 'row' },
       h('button', { class: 'btn btn-secondary', onClick: () => void playTone(startingMidi(tonic, octave) + 12, app.prefs.a4, 1.2) }, '▶ Highest note'),
-      h('button', { class: 'btn', onClick: () => { app.update({ tonic, saOctave: octave }); overlay.remove(); onDone?.(); } }, 'Use this setting')),
+      h('button', { class: 'btn', onClick: () => { app.update({ tonic, saOctave: octave }); tanpura.retune(startingMidi(tonic, octave), app.prefs.a4); overlay.remove(); onDone?.(); } }, 'Use this setting')),
   ));
   document.body.append(overlay);
 }

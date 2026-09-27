@@ -3,6 +3,8 @@ import { scaleById } from '../core/scale';
 import type { PracticeSession } from '../core/session';
 import { LessonStore, requestPersistence } from '../storage/db';
 import { loadPrefs, savePrefs, type Prefs } from '../storage/prefs';
+import { tanpura } from '../audio/tanpura';
+import { startingMidi } from '../core/swara';
 import { h } from './dom';
 import { PitchFinderView } from './finder';
 import { PracticeView } from './practice';
@@ -94,6 +96,7 @@ export class App {
   update(patch: Partial<Prefs>): void {
     this.prefs = { ...this.prefs, ...patch };
     savePrefs(this.prefs);
+    if (tanpura.running && ('tonic' in patch || 'saOctave' in patch || 'a4' in patch)) tanpura.retune(startingMidi(this.prefs.tonic, this.prefs.saOctave), this.prefs.a4);
     this.practice?.refresh();
   }
 

@@ -263,3 +263,10 @@ select:disabled { opacity: 0.6; }
 .tile { background: transparent; font-family: inherit; cursor: pointer; }
 .tile:hover { background: var(--card-2); }
 .tile.current:hover { background: var(--accent-soft); }
+.tanpura { display: inline-flex; align-items: center; gap: 8px; }
+.tanpura-btn.on { color: var(--in-tune); }
+.tanpura-vol { width: 80px; accent-color: var(--accent); }
+.tanpura-vol[hidden] { display: none; }
+.guide-btn.on { color: var(--in-tune); }
+.attempts .show-all { align-self: flex-start; }
+input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }

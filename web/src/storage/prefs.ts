@@ -9,10 +9,15 @@ export interface Prefs {
   lessonId: string;
   apiKey: string;
   onboarded: boolean;
+  tanpuraVolume: number;
+  /** play each target note automatically as it comes up */
+  noteGuide: boolean;
+  /** require each note to be held for the lesson's time; off = register as soon as steady */
+  holdNotes: boolean;
 }
 
 const KEY = 'raaga.prefs';
-const defaults: Prefs = { notation: 'indian', tonic: 0, saOctave: 3, a4: 440, lessonId: 'first_notes', apiKey: '', onboarded: false };
+const defaults: Prefs = { notation: 'indian', tonic: 0, saOctave: 3, a4: 440, lessonId: 'first_notes', apiKey: '', onboarded: false, tanpuraVolume: 0.5, noteGuide: true, holdNotes: true };
 
 export function loadPrefs(): Prefs {
   try {

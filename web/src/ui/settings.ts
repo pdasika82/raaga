@@ -36,6 +36,8 @@ export class SettingsView {
     const a4 = h('input', { class: 'input', type: 'number', min: 415, max: 466, step: 1, value: p.a4 }) as HTMLInputElement;
     a4.addEventListener('change', () => this.app.update({ a4: Number(a4.value) || 440 }));
 
+    const holdToggle = h('input', { type: 'checkbox', checked: p.holdNotes }) as HTMLInputElement;
+    holdToggle.addEventListener('change', () => this.app.update({ holdNotes: holdToggle.checked }));
     const custom = await LessonStore.custom();
     const lessonList = h('ul', { class: 'list' });
     for (const l of custom) {
@@ -73,6 +75,13 @@ export class SettingsView {
         h('label', { class: 'field' }, h('span', {}, 'Starting note'), octave),
         h('button', { class: 'link small', onClick: () => this.app.navigate('tune') }, 'Not sure? Find comfortable Sa ›'),
         h('label', { class: 'field' }, h('span', {}, 'A4 reference (Hz)'), a4),
+      ),
+      h(
+        'section',
+        { class: 'card' },
+        h('h3', {}, 'Practice'),
+        h('label', { class: 'field' }, h('span', {}, 'Hold each note for the lesson\'s time (usually 1 s)'), holdToggle),
+        h('div', { class: 'muted tiny' }, 'Off: a note registers as soon as it is steady for about a third of a second. Useful for running through a sequence quickly; keep it on to build steadiness.'),
       ),
       h(
         'section',

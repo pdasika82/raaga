@@ -62,6 +62,19 @@ Ri₂: Chatusruti Rishabham. **Recent attempts** on the right lists each judged 
 If you keep singing an octave below the starting note, the app offers once to lower
 it. Nothing else changes your settings mid-exercise.
 
+**Tanpura and note guide.** Two header controls shape how much help you get:
+
+- **♫ Tanpura** starts a drone tuned to your Sa (Pa · Sa · Sa · lower Sa) with its own
+  volume slider. Keep it soft, or use headphones, so the microphone hears your voice
+  rather than the drone.
+- **♪ Note guide** on means the app plays each target note as it comes up and again
+  after a miss. Off means silence: you find each note against the drone, and only
+  the Play button gives a hint.
+
+Start with both on. When the notes come easily, switch the note guide off and keep
+the drone: that is how a tanpura is used in real practice, and it trains the ear to
+place every swara from Sa alone.
+
 ## 4. Read the review
 
 The review opens with **Your next step**: one observation ("Ri was a little high")
