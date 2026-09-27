@@ -35,7 +35,7 @@ jobs:
         env:
           BASE_PATH: /raaga/
       - name: Build the listen-and-repeat app under /v2
-        run: npm run build && mkdir -p ../web/dist/v2 && cp -r dist/. ../web/dist/v2/
+        run: npm ci && npm run build && mkdir -p ../web/dist/v2 && cp -r dist/. ../web/dist/v2/
         working-directory: web2
         env:
           BASE_PATH: /raaga/v2/
