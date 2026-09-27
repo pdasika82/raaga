@@ -358,3 +358,10 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .details-row summary > span:first-child { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 .score-row { flex-wrap: nowrap; margin-left: auto; margin-right: 12px; white-space: nowrap; }
 @media (max-width: 720px) { .details-row summary { flex-wrap: wrap; } .score-row { margin-left: 0; flex-wrap: wrap; white-space: normal; } }
+.speed-switch { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; }
+.seg { background: var(--card); border: 1px solid var(--border); color: var(--fg); padding: 6px 12px; font-family: inherit; cursor: pointer; }
+.seg:first-of-type { border-radius: 8px 0 0 8px; }
+.seg:last-of-type { border-radius: 0 8px 8px 0; }
+.seg.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.practice-group { display: flex; flex-direction: column; gap: 4px; }
+.practice-group + .practice-group { margin-top: 8px; }

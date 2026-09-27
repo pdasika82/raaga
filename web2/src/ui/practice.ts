@@ -6,7 +6,7 @@ import { newSession, type PracticeSession } from '@core/session';
 import { analyze, hasVoice, score, type PerformanceReport } from '@core/analyzer';
 import { degreeSthana, describeSemitone, detectedLabel, parseSequence, scaleGlossary, startingMidi, tokenLabel, tokenMidi, tokenSpoken, type Token } from '@core/swara';
 import { ExampleStore, SessionStore } from '@storage/db';
-import { BPM_OPTIONS, PRACTICES, YOUR_PACE, type Practice } from '../core/practices';
+import { BPM_OPTIONS, NOTES_PER_BEAT, PRACTICES, YOUR_PACE, type Practice } from '../core/practices';
 import { compareFree, compareTake, toTargetMarks, type BeatTarget, type TakeComparison } from '../core/repeat';
 import type { App } from './app';
 import { clear, h } from './dom';
@@ -57,7 +57,7 @@ export class PracticeView {
   private get practice(): Practice {
     const l = this.app.lesson();
     const base = PRACTICES.find((p) => p.id === l.id);
-    return base ?? { ...l, subtitle: l.sequence ?? '', bpm: 60, mode: 'LISTEN & REPEAT' };
+    return base ?? { ...l, subtitle: l.sequence ?? '', bpm: 60, mode: 'LISTEN & REPEAT', group: 'Drill' };
   }
 
   private get bpm(): number {
@@ -69,9 +69,30 @@ export class PracticeView {
     return this.bpm === YOUR_PACE;
   }
 
-  /** seconds per note; for your-pace mode the tone guide plays at 60 bpm */
+  /** seconds per tala beat; for your-pace mode the tone guide plays at 60 bpm */
   private get beat(): number {
     return 60 / (this.freePace ? 60 : this.bpm);
+  }
+
+  private get speed(): 1 | 2 | 3 {
+    return this.practice.speeds ? (this.app.prefs.speed[this.practice.id] ?? 1) : 1;
+  }
+
+  /** seconds per count: one swara at first speed, two per beat at second, four at third */
+  private get noteDur(): number {
+    return this.beat / NOTES_PER_BEAT[this.speed];
+  }
+
+  private get totalCounts(): number {
+    return this.tokens.reduce((a, t) => a + t.units, 0);
+  }
+
+  /** start of each note in counts from the phrase start */
+  private get countOffsets(): number[] {
+    const out: number[] = [];
+    let acc = 0;
+    for (const t of this.tokens) { out.push(acc); acc += t.units; }
+    return out;
   }
 
   // your-pace detection state
@@ -120,9 +141,9 @@ export class PracticeView {
     const scale = lessonScale(practice);
     this.tokens = parseSequence(practice.sequence ?? '');
     const start = startingMidi(prefs.tonic, prefs.saOctave);
-    this.targets = this.tokens.map((t) => ({ token: t.raw, midi: tokenMidi(t, scale, start) ?? start }));
+    this.targets = this.tokens.map((t) => ({ token: t.raw, midi: tokenMidi(t, scale, start) ?? start, units: t.units }));
     const drill = this.app.drill != null;
-    const secs = Math.round(this.tokens.length * this.beat);
+    const secs = Math.round(this.totalCounts * this.noteDur);
     const lengthText = this.freePace ? `${this.tokens.length} notes · your pace` : `${this.tokens.length} notes · ${secs} seconds`;
 
     const stepBtn = (s: Step, n: number, label: string) => h('button', {
@@ -148,7 +169,10 @@ export class PracticeView {
             this.step === 'listen' ? this.listenStage(lengthText) : this.step === 'turn' ? this.turnStage(lengthText) : this.compareStage(),
             h('div', { class: 'card-foot' },
               h('span', { class: 'muted' }, 'Pace'), paceSel,
-              h('span', { class: 'muted' }, this.freePace ? 'The next swara lights up when yours is heard' : `${scale.tradition === 'Carnatic' ? 'Adi tala · ' : ''}one note per beat`),
+              practice.speeds ? h('span', { class: 'speed-switch', role: 'group', 'aria-label': 'Speed' },
+                h('span', { class: 'muted' }, 'Speed'),
+                ...practice.speeds.map((sp) => h('button', { class: `seg${sp === this.speed ? ' on' : ''}`, disabled: this.phase !== 'idle', onClick: () => this.app.update({ speed: { ...this.app.prefs.speed, [practice.id]: sp } }) }, String(sp)))) : null,
+              h('span', { class: 'muted' }, this.freePace ? 'The next swara lights up when yours is heard' : `${scale.tradition === 'Carnatic' ? 'Adi tala · ' : ''}${NOTES_PER_BEAT[this.speed] === 1 ? 'one swara per beat' : `${NOTES_PER_BEAT[this.speed]} swaras per beat`}`),
               h('span', { class: 'spacer' }),
               h('button', { class: 'link', onClick: () => this.startOver() }, 'Start over'))),
           h('details', { class: 'details-row', open: true },
@@ -164,8 +188,10 @@ export class PracticeView {
           h('section', { class: 'card' },
             h('h3', {}, 'Choose a practice'),
             drill ? h('button', { class: 'link small', onClick: () => this.app.clearDrill() }, '‹ Back to practices') : null,
-            h('ul', { class: 'practices' }, ...PRACTICES.map((p, i) => h('li', { class: p.id === practice.id && !drill ? 'current' : '', onClick: () => { if (this.phase === 'idle') { this.app.drill = null; this.app.setPractice(p.id); } } },
-              h('span', { class: 'num' }, String(i + 1)), h('span', {}, h('div', { class: 't' }, p.title), h('div', { class: 's' }, p.subtitle)))))),
+            ...[...new Set(PRACTICES.map((p) => p.group))].map((group) => h('div', { class: 'practice-group' },
+              h('div', { class: 'eyebrow' }, group),
+              h('ul', { class: 'practices' }, ...PRACTICES.filter((p) => p.group === group).map((p, i) => h('li', { class: p.id === practice.id && !drill ? 'current' : '', onClick: () => { if (this.phase === 'idle') { this.app.drill = null; this.app.setPractice(p.id); } } },
+                h('span', { class: 'num' }, String(i + 1)), h('span', {}, h('div', { class: 't' }, p.title), h('div', { class: 's' }, p.subtitle)))))))),
           h('section', { class: 'card' },
             h('h3', {}, practice.pulse ? 'Keep the pulse steady' : 'Hear the starting Sa'),
             h('p', { class: 'muted' }, practice.pulse ?? 'Return to this note before each phrase. Keep your voice comfortable.'),
@@ -217,7 +243,7 @@ export class PracticeView {
     const n = c.results.length;
     const headline = c.matched === n ? `All ${n} matched` : `${c.matched} of ${n} matched`;
     return h('div', { class: 'stage' },
-      h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'COMPARE'), h('span', { class: 'muted' }, this.freePace ? 'your pace' : c.offsetBeats ? `timing ${c.offsetBeats > 0 ? 'late' : 'early'} by ${Math.abs(c.offsetBeats).toFixed(1)} beat` : 'timing on the beat')),
+      h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'COMPARE'), h('span', { class: 'muted' }, this.freePace ? 'your pace' : c.offsetBeats ? `timing ${c.offsetBeats > 0 ? 'late' : 'early'} by ${Math.abs(c.offsetBeats).toFixed(1)} ${this.speed === 1 ? 'beat' : 'count'}` : 'timing on the beat')),
       h('h2', {}, headline),
       h('p', { class: 'lead' }, this.compareLead()),
       this.swaras,
@@ -275,13 +301,14 @@ export class PracticeView {
     this.tokens.forEach((tok, i) => {
       const name = tokenLabel(tok, prefs.notation, prefs.tonic, scale);
       let sub = tok.octave > 0 ? 'upper' : tok.octave < 0 ? 'lower' : tok.family === 'S' || tok.family === 'P' ? '' : (degreeSthana(tok.family, scale) ?? '').replace(/^([A-Z])[a-z]+/, '$1');
+      if (tok.units > 1) sub = `${sub ? sub + ' · ' : ''}hold ${tok.units}`;
       let cls = 'swara';
       if (this.step === 'compare' && this.comparison) {
         const r = this.comparison.results[i];
         cls += ` v-${r.verdict}`;
         sub = r.verdict === 'match' ? `${r.cents! >= 0 ? '+' : ''}${r.cents}¢` : r.verdict === 'near' ? (r.cents! > 0 ? 'a little high' : 'a little low') : r.verdict === 'wrong' ? describeSemitone(Math.round(r.detectedMidi!) - prefs.tonic, scale, prefs.notation, prefs.tonic) : 'not heard';
       } else if (i === this.beatIndex && this.phase === 'recording') cls += ' current';
-      this.swaras.append(h('button', { class: cls, title: tokenSpoken(tok, prefs.notation, prefs.tonic, scale), onClick: () => { if (this.phase === 'idle') void playTone(this.targets[i].midi, prefs.a4, 0.9 * this.beat); } },
+      this.swaras.append(h('button', { class: cls, title: tokenSpoken(tok, prefs.notation, prefs.tonic, scale), onClick: () => { if (this.phase === 'idle') void playTone(this.targets[i].midi, prefs.a4, Math.max(0.3, 0.9 * this.noteDur * tok.units)); } },
         h('span', { class: 'name' }, name), h('span', { class: 'sub' }, sub || ' ')));
     });
   }
@@ -307,8 +334,9 @@ export class PracticeView {
       const tiles = [...this.swaras.children] as HTMLElement[];
       for (let i = 0; i < this.targets.length; i++) {
         tiles.forEach((t, j) => t.classList.toggle('playing', j === i));
-        await playTone(this.targets[i].midi, this.app.prefs.a4, this.beat * 0.92);
-        await new Promise((r) => setTimeout(r, this.beat * 0.08 * 1000));
+        const dur = this.noteDur * (this.targets[i].units ?? 1);
+        await playTone(this.targets[i].midi, this.app.prefs.a4, dur * 0.92);
+        await new Promise((r) => setTimeout(r, dur * 0.08 * 1000));
       }
       tiles.forEach((t) => t.classList.remove('playing'));
     }
@@ -359,9 +387,12 @@ export class PracticeView {
         return;
       }
       if (this.phase === 'countin') { this.phase = 'recording'; this.phraseStart = this.capture.elapsed; this.render(); }
-      const i = b - countIn;
-      if (i >= this.targets.length + 1 || (i >= this.targets.length && elapsed / beatMs - b > 0.5)) { void this.stopSinging(false); return; }
-      if (i !== this.beatIndex && i < this.targets.length) { this.beatIndex = i; this.renderSwaras(); }
+      const counts = (elapsed - countIn * beatMs) / (this.noteDur * 1000);
+      if (counts >= this.totalCounts + 0.6) { void this.stopSinging(false); return; }
+      const offsets = this.countOffsets;
+      let i = 0;
+      while (i + 1 < offsets.length && counts >= offsets[i + 1]) i++;
+      if (i !== this.beatIndex) { this.beatIndex = i; this.renderSwaras(); }
     }, 25);
   }
 
@@ -382,13 +413,13 @@ export class PracticeView {
     const tooEarly = this.freePace ? this.detected.length === 0 : manual && this.beatIndex < 1;
     if (!result || !wasRecording || tooEarly) { this.beatIndex = -1; this.render(); return; }
     const { prefs } = this.app;
-    const c = this.freePace ? compareFree(this.detected, this.targets) : compareTake(result.samples, this.targets, this.beat, this.phraseStart, prefs.a4);
+    const c = this.freePace ? compareFree(this.detected, this.targets) : compareTake(result.samples, this.targets, this.noteDur, this.phraseStart, prefs.a4);
     this.comparison = c;
     if (this.takeUrl) URL.revokeObjectURL(this.takeUrl);
     this.takeUrl = URL.createObjectURL(result.blob);
     const session = newSession({
       id: crypto.randomUUID(), lesson: this.practice, tonic: prefs.tonic, a4: prefs.a4, duration: result.duration, audioMime: result.mime, samples: result.samples,
-      mode: 'guided', lessonSequence: this.tokens.map((t) => t.raw), targets: toTargetMarks(c, this.beat),
+      mode: 'guided', lessonSequence: this.tokens.map((t) => t.raw), targets: toTargetMarks(c, this.noteDur),
     });
     await SessionStore.save(session, result.blob);
     this.sessionId = session.id;

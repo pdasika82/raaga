@@ -11,10 +11,12 @@ export interface Prefs {
   droneVolume: number;
   /** bpm chosen per practice id */
   bpm: Record<string, number>;
+  /** speed chosen per practice id: 1, 2 or 3 */
+  speed: Record<string, 1 | 2 | 3>;
 }
 
 const KEY = 'raaga2.prefs';
-const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {} };
+const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {}, speed: {} };
 
 export function loadPrefs(): Prefs {
   try {

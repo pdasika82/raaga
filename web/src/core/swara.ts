@@ -58,6 +58,8 @@ export interface Token {
   /** octave relative to the starting Sa: -1 lower, 0 middle, +1 upper */
   octave: number;
   raw: string;
+  /** counts the note is held for; a standalone "," (karvai) in the sequence adds one */
+  units: number;
 }
 
 /** Parse "S", "S'" (upper), "N," (lower). Dots (Ṡ, Ṇ) are also accepted. */
@@ -69,11 +71,19 @@ export function parseToken(raw: string): Token | null {
   let octave = 0;
   if (t.includes("'") || t.includes('̇') || t.includes('˙')) octave = 1;
   if (t.includes(',') || t.includes('̣')) octave = -1;
-  return { family: base as Family, octave, raw };
+  return { family: base as Family, octave, raw, units: 1 };
 }
 
+/** Parse a sequence. Bar lines are ignored; a standalone "," holds the previous note one more count. */
 export function parseSequence(text: string): Token[] {
-  return text.split(/[\s|]+/).map(parseToken).filter((t): t is Token => t !== null);
+  const out: Token[] = [];
+  for (const piece of text.split(/[\s|]+/)) {
+    if (!piece) continue;
+    if (piece === ',') { if (out.length) out[out.length - 1].units++; continue; }
+    const t = parseToken(piece);
+    if (t) out.push(t);
+  }
+  return out;
 }
 
 /** Beginner tile label: "Sa", "Ri", "Ṡa" (upper), "Ṣa" (lower); Western letters in Western notation. */

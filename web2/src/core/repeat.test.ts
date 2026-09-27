@@ -59,3 +59,18 @@ describe('compareFree', () => {
     expect(c.results.map((r) => r.verdict)).toEqual(['match', 'match', 'wrong', 'match', 'match']);
   });
 });
+
+import { parseSequence } from '@core/swara';
+describe('karvai and speeds', () => {
+  it('parses a standalone comma as a held count', () => {
+    const t = parseSequence("S R G M P , G M | P , , , P , , ,");
+    expect(t.map((x) => `${x.family}${x.units}`)).toEqual(['S1', 'R1', 'G1', 'M1', 'P2', 'G1', 'M1', 'P4', 'P4']);
+    expect(parseSequence("N, R")[0].octave).toBe(-1); // attached comma is still the lower-octave mark
+  });
+  it('compares held notes over their full duration', () => {
+    const targets = [{ token: 'S', midi: 60 }, { token: 'P', midi: 67, units: 2 }, { token: 'S', midi: 60 }];
+    // one count = 0.5 s; Pa lasts a full second
+    const c = compareTake(take([60, 67, 67, 60], 0.5, 1), targets, 0.5, 1);
+    expect(c.results.map((r) => r.verdict)).toEqual(['match', 'match', 'match']);
+  });
+});

@@ -6,6 +6,8 @@ export type BeatVerdict = 'match' | 'near' | 'wrong' | 'silent';
 export interface BeatTarget {
   token: string;
   midi: number;
+  /** counts the note lasts (karvai); default 1 */
+  units?: number;
 }
 
 export interface BeatResult {
@@ -33,11 +35,17 @@ export interface TakeComparison {
  */
 export function compareTake(samples: PitchSample[], targets: BeatTarget[], beat: number, phraseStart: number, a4 = 440): TakeComparison {
   const voiced = samples.filter((s) => s.hz > 0 && s.clarity >= 0.5 && s.rms >= 0.008).map((s) => ({ t: s.t, midi: midiFromHz(s.hz, a4) }));
+  // cumulative start of each note in counts, allowing held notes
+  const offsets: number[] = [];
+  let acc = 0;
+  for (const tg of targets) { offsets.push(acc); acc += tg.units ?? 1; }
   let best: TakeComparison | null = null;
-  for (const off of [-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3]) {
+  for (const off of [-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5]) {
     const results = targets.map((tg, i) => {
-      const start = phraseStart + (i + off) * beat;
-      const w0 = start + 0.2 * beat, w1 = start + 0.9 * beat;
+      const dur = (tg.units ?? 1) * beat;
+      const start = phraseStart + (offsets[i] + off) * beat;
+      // skip the onset (scoop) and the release: at least 120 ms in, at least 50 ms before the end
+      const w0 = start + Math.max(0.2 * beat, 0.12), w1 = start + dur - Math.max(0.1 * beat, 0.05);
       const inWin = voiced.filter((v) => v.t >= w0 && v.t <= w1).map((v) => v.midi).sort((a, b) => a - b);
       if (inWin.length < 3) return { index: i, token: tg.token, targetMidi: tg.midi, verdict: 'silent' as BeatVerdict, cents: null, detectedMidi: null, start };
       const median = inWin[inWin.length >> 1];
