@@ -1,3 +1,4 @@
+# Publishes web/ to https://pdasika82.github.io/raaga/ (the repo must be public on a free plan).
 name: Deploy web app to GitHub Pages
 
 on:
