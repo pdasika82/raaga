@@ -10,6 +10,7 @@ import { BPM_OPTIONS, PRACTICES, YOUR_PACE, type Practice } from '../core/practi
 import { compareFree, compareTake, toTargetMarks, type BeatTarget, type TakeComparison } from '../core/repeat';
 import type { App } from './app';
 import { clear, h } from './dom';
+import { showPitchReference } from './reference';
 import { showPitchSetup } from './setup';
 import { playTone } from './tone';
 
@@ -149,7 +150,7 @@ export class PracticeView {
               h('span', { class: 'spacer' }),
               h('button', { class: 'link', onClick: () => this.startOver() }, 'Start over'))),
           h('details', { class: 'details-row', open: true },
-            h('summary', {}, h('span', {}, 'Pitch details')),
+            h('summary', {}, h('span', {}, 'Pitch details ', h('button', { class: 'info', title: 'Pitch reference', 'aria-label': 'Pitch reference', onClick: (e) => { e.preventDefault(); showPitchReference(this.app as never, scale); } }, 'ⓘ'))),
             this.step === 'compare' && this.comparison ? this.compareTable() : h('table', { class: 'detail-table' },
               h('thead', {}, h('tr', {}, h('th', {}, 'Target'), h('th', {}, 'Detected'), h('th', {}, 'Difference from target'))),
               h('tbody', {}, h('tr', {}, this.dTarget, this.dDetected, this.dDiff))),
@@ -404,7 +405,7 @@ export class PracticeView {
     const midi = voiced ? midiFromHz(f.frequency!, this.app.prefs.a4) : null;
     if (voiced) this.lastVoiced = now;
     if (this.carry != null) {
-      if (midi != null && Math.abs(midi - this.carry) <= 0.6) return;
+      if (midi != null && Math.abs(midi - this.carry) <= 0.9) return;
       if (midi != null || now - this.lastVoiced > 250) this.carry = null;
     }
     const holdMs = 350;

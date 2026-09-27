@@ -68,14 +68,35 @@ export function toTargetMarks(c: TakeComparison, beat: number): TargetMark[] {
   }));
 }
 
-/** Compare notes the singer produced at their own pace, one detected note per target in order. */
+/**
+ * Compare notes the singer produced at their own pace. The detected notes are aligned to the
+ * targets by sequence (a small edit distance), so one extra or missed note shifts only itself.
+ */
 export function compareFree(detected: { midi: number; at: number }[], targets: BeatTarget[]): TakeComparison {
-  const results: BeatResult[] = targets.map((tg, i) => {
-    const d = detected[i];
-    if (!d) return { index: i, token: tg.token, targetMidi: tg.midi, verdict: 'silent', cents: null, detectedMidi: null, start: detected[detected.length - 1]?.at ?? 0 };
+  const n = targets.length, m = detected.length;
+  const cost = (i: number, j: number) => {
+    const c = Math.abs(detected[j].midi - targets[i].midi) * 100;
+    return c <= 60 ? 0 : c <= 150 ? 0.6 : 1.2;
+  };
+  // dp[i][j]: best cost aligning targets[0..i) with detected[0..j)
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = 1; i <= n; i++) dp[i][0] = i; // missed targets
+  for (let j = 1; j <= m; j++) dp[0][j] = j; // extra notes
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) dp[i][j] = Math.min(dp[i - 1][j - 1] + cost(i - 1, j - 1), dp[i - 1][j] + 1, dp[i][j - 1] + 1);
+  // backtrack
+  const assigned: (number | null)[] = new Array(n).fill(null);
+  let i = n, j = m;
+  while (i > 0 && j > 0) {
+    if (dp[i][j] === dp[i - 1][j - 1] + cost(i - 1, j - 1)) { assigned[i - 1] = j - 1; i--; j--; }
+    else if (dp[i][j] === dp[i - 1][j] + 1) i--;
+    else j--;
+  }
+  const results: BeatResult[] = targets.map((tg, k) => {
+    const d = assigned[k] == null ? null : detected[assigned[k]!];
+    if (!d) return { index: k, token: tg.token, targetMidi: tg.midi, verdict: 'silent', cents: null, detectedMidi: null, start: detected[detected.length - 1]?.at ?? 0 };
     const cents = Math.round((d.midi - tg.midi) * 100);
     const verdict: BeatVerdict = Math.abs(cents) <= 20 ? 'match' : Math.abs(cents) <= 60 ? 'near' : 'wrong';
-    return { index: i, token: tg.token, targetMidi: tg.midi, verdict, cents, detectedMidi: d.midi, start: d.at };
+    return { index: k, token: tg.token, targetMidi: tg.midi, verdict, cents, detectedMidi: d.midi, start: d.at };
   });
   return { results, matched: results.filter((r) => r.verdict === 'match' || r.verdict === 'near').length, offsetBeats: 0 };
 }

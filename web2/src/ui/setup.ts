@@ -4,6 +4,7 @@ import { midiFromHz, westernName, westernPitchClassName, WESTERN_NAMES } from '@
 import { startingMidi } from '@core/swara';
 import type { App, Route } from './app';
 import { h } from './dom';
+import { showPitchReference } from './reference';
 import { playPhrase, playTone } from './tone';
 
 /** Top bar: brand, drone toggle, Sa · Start chip, and the section tabs. */
@@ -23,7 +24,8 @@ export function topBar(app: App, route: Route, tradition: string): HTMLElement {
     h('span', { class: 'topbar-right' },
       h('span', { class: 'lr-tabs' }, tab('practice', 'Practice'), tab('sessions', 'Sessions'), tab('settings', 'Settings')),
       h('span', { class: 'row' }, droneBtn, vol),
-      h('button', { class: 'pitch-chip', onClick: () => showPitchSetup(app) }, h('span', {}, `Sa ${westernPitchClassName(prefs.tonic)}`), h('span', { class: 'dot' }, '·'), h('span', {}, `Start ${westernName(start)}`), h('span', { class: 'dot' }, '⌄'))));
+      h('button', { class: 'pitch-chip', onClick: () => showPitchSetup(app) }, h('span', {}, `Sa ${westernPitchClassName(prefs.tonic)}`), h('span', { class: 'dot' }, '·'), h('span', {}, `Start ${westernName(start)}`), h('span', { class: 'dot' }, '⌄')),
+      h('button', { class: 'info', title: 'Pitch reference: every note from low to high with its frequency', 'aria-label': 'Pitch reference', onClick: () => showPitchReference(app as never) }, 'ⓘ')));
 }
 
 /** "Find a comfortable Sa" modal: selects, hear it, optional hum to suggest, use. */
@@ -88,7 +90,7 @@ export function showPitchSetup(app: App, onDone?: () => void): void {
       h('b', {}, 'Or start with a comfortable hum'),
       h('div', { class: 'muted small' }, "Hum gently for a few seconds. We'll suggest a starting point for you to try."),
       humBtn, humStatus),
-    h('p', { class: 'muted small' }, 'Sing along with the range check before choosing. A hum is a starting point, not a measure of your full range.'),
+    h('p', { class: 'muted small' }, 'Sing along with the range check before choosing. A hum is a starting point, not a measure of your full range. ', h('button', { class: 'link small', onClick: () => showPitchReference(app as never) }, 'Which notes are higher or lower? ›')),
     h('div', { class: 'row end' },
       h('button', { class: 'btn btn-secondary', onClick: close }, 'Cancel'),
       h('button', { class: 'btn', onClick: () => { app.update({ tonic, saOctave: octave }); close(); onDone?.(); } }, 'Use this Sa'))));

@@ -46,4 +46,16 @@ describe('compareFree', () => {
     expect(c.matched).toBe(2);
     expect(c.offsetBeats).toBe(0);
   });
+  it('does not let one extra note shift the rest', () => {
+    // S R G R S sung, with Ga counted twice (settled sharper the second time)
+    const t5 = [60, 62, 64, 62, 60].map((midi, i) => ({ token: 'SRGRS'[i], midi }));
+    const c = compareFree([{ midi: 60, at: 1 }, { midi: 62.2, at: 2 }, { midi: 63.6, at: 3 }, { midi: 64.4, at: 3.5 }, { midi: 62, at: 4 }, { midi: 60, at: 5 }], t5);
+    expect(c.results.map((r) => r.verdict)).toEqual(['match', 'match', 'near', 'match', 'match']);
+    expect(c.matched).toBe(5);
+  });
+  it('marks a genuinely wrong note without shifting', () => {
+    const t5 = [60, 62, 64, 62, 60].map((midi, i) => ({ token: 'SRGRS'[i], midi }));
+    const c = compareFree([{ midi: 60, at: 1 }, { midi: 62, at: 2 }, { midi: 65, at: 3 }, { midi: 62, at: 4 }, { midi: 60, at: 5 }], t5);
+    expect(c.results.map((r) => r.verdict)).toEqual(['match', 'match', 'wrong', 'match', 'match']);
+  });
 });
