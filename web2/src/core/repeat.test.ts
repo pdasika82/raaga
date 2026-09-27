@@ -36,3 +36,14 @@ describe('compareTake', () => {
     expect(early.offsetBeats).toBeLessThan(0);
   });
 });
+
+import { compareFree } from './repeat';
+describe('compareFree', () => {
+  const targets = [60, 62, 64].map((midi, i) => ({ token: 'SRG'[i], midi }));
+  it('compares detected notes in order and marks missing ones silent', () => {
+    const c = compareFree([{ midi: 60.05, at: 1 }, { midi: 62.5, at: 2 }], targets);
+    expect(c.results.map((r) => r.verdict)).toEqual(['match', 'near', 'silent']);
+    expect(c.matched).toBe(2);
+    expect(c.offsetBeats).toBe(0);
+  });
+});

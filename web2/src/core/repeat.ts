@@ -67,3 +67,15 @@ export function toTargetMarks(c: TakeComparison, beat: number): TargetMark[] {
     attempts: 1,
   }));
 }
+
+/** Compare notes the singer produced at their own pace, one detected note per target in order. */
+export function compareFree(detected: { midi: number; at: number }[], targets: BeatTarget[]): TakeComparison {
+  const results: BeatResult[] = targets.map((tg, i) => {
+    const d = detected[i];
+    if (!d) return { index: i, token: tg.token, targetMidi: tg.midi, verdict: 'silent', cents: null, detectedMidi: null, start: detected[detected.length - 1]?.at ?? 0 };
+    const cents = Math.round((d.midi - tg.midi) * 100);
+    const verdict: BeatVerdict = Math.abs(cents) <= 20 ? 'match' : Math.abs(cents) <= 60 ? 'near' : 'wrong';
+    return { index: i, token: tg.token, targetMidi: tg.midi, verdict, cents, detectedMidi: d.midi, start: d.at };
+  });
+  return { results, matched: results.filter((r) => r.verdict === 'match' || r.verdict === 'near').length, offsetBeats: 0 };
+}
