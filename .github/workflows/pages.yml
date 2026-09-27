@@ -4,7 +4,7 @@ name: Deploy web app to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['web/**', 'web2/**', 'site/**', '.github/workflows/pages.yml']
+    paths: ['web/src/**', 'web2/**', 'site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -31,21 +31,16 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm test
-      - name: Build Raaga Steps
-        run: npm run build
-        env:
-          BASE_PATH: /raaga/steps/
-      - name: Build Raaga Echo
+      - name: Build Raaga (web2) at the site root
         run: npm ci && npm run build
         working-directory: web2
         env:
-          BASE_PATH: /raaga/echo/
+          BASE_PATH: /raaga/
       - name: Assemble the site
         run: |
-          rm -rf ../_site && mkdir -p ../_site/steps ../_site/echo
+          rm -rf ../_site && mkdir -p ../_site
+          cp -r ../web2/dist/. ../_site/
           cp -r ../site/. ../_site/
-          cp -r dist/. ../_site/steps/
-          cp -r ../web2/dist/. ../_site/echo/
       - uses: actions/configure-pages@v5
         with:
           enablement: true

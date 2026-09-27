@@ -16,94 +16,66 @@ it. This guide takes you from zero to your first feedback in about twenty minute
 
 ## 1. Set up (2 minutes)
 
-1. Open the app. Tap **Start listening** and allow the microphone.
-2. Settings: choose **Note names**. Pick *Indian (S R G)* for Carnatic or Hindustani
-   lessons, *Western (C D E)* otherwise.
-3. Optional now, needed for feedback later: paste an Anthropic API key and tap
-   **Save key**. Get one at console.anthropic.com. Nothing is sent until you ask for
-   feedback, and the audio itself never leaves the phone.
+1. Open https://pdasika82.github.io/raaga/ in Safari. In Safari's Share menu choose
+   **Add to Home Screen**; it then opens like an app and works offline.
+2. Optional, needed for written guidance later: Settings → paste an Anthropic API key
+   from console.anthropic.com. Nothing is sent until you ask for guidance, and the
+   audio itself never leaves the phone.
 
 Practise in a quiet room with the phone about a forearm's length from your mouth.
 
 ## 2. Set your pitch (5 minutes)
 
-Two settings decide where every exercise sits. Both are on the Practice screen under
-**Pitch setup**.
+Tap the **Sa · Start** chip in the top bar, or **Find a comfortable Sa**. Two settings
+decide where every exercise sits:
 
-- **Your Sa**: the note name, such as G. Every swara is measured from it.
-- **Starting note**: how high or low you sing that Sa, such as G3. The exercise's
-  highest note is one octave above it.
+- **Sa**: the note name, such as G. Every swara is measured from it.
+- **Starting octave**: how high or low you sing that Sa. The exercise's highest note is
+  one octave above it.
 
-Tap **Find comfortable Sa** and follow the four steps: hum a relaxed note three
-times, hear the suggested Sa and a short phrase, sing the lesson's highest and lowest
-notes and say whether they felt comfortable, then confirm. **Adjust** sets the two
-values separately, each with a preview. Keep the result fixed for a few weeks.
+Choose them from the lists, or tap **Use microphone** and hum gently; the app suggests
+a starting point. **Hear Sa** and **Hear lower Pa, Sa, upper Sa** let you check the
+range before you press **Use this Sa**. Keep the result fixed for a few weeks. The ⓘ
+button shows every note from low to high with its frequency.
 
-## 3. Practise
+## 3. Practise: listen, sing, compare
 
-1. Pick a lesson. The tiles show the swaras it will ask for, in order.
-2. Tap **Start practice**. After a three-second countdown the app records and shows
-   the first swara to sing, for example **Sa**, with "Hold each note for 1 second".
-3. Sing it. The box under the swara says what to do:
-   - **On pitch · Hold it**: stay until the tile turns green and the next swara appears.
-   - **A little low · Raise your pitch slightly** (or high / lower).
-   - **That didn't match Sa · Listen to the reference and try again**: the target
-     plays once; sing it again. Your Sa does not change during an exercise.
-   - **Can't hear clearly**: sing a steady "aa", a little louder.
-4. **Play Sa** plays the target. **Pause** stops the recording without ending it.
-   **Skip note** moves on. When the last swara is done the review opens, or tap
-   **Finish & review**.
+Pick a practice on the right. Start with **Find Sa**, then **Sa & Pa**, then **First
+notes**; the Sarali Varisai come after.
 
-**Pitch details** below the card shows the target (S · G3), what was detected
-("Near Sa", "Near Ri₁ (outside this scale)", or "Between Ri₁ and Ri₂"), and the
-difference in cents. The line under it names the scale's svarasthanas, for example
-Ri₂: Chatusruti Rishabham. **Recent attempts** on the right lists each judged note.
+1. **Listen.** Tap **Listen to example**. After a 3-2-1 count the tone guide plays the
+   phrase and the tiles light up in turn. Tap any tile to hear that swara alone.
+2. **Your turn.** Tap **Start singing**. With the pace set to **Your pace** there is no
+   clock: sing a swara, hold it a moment, and the next tile lights up when yours is
+   heard. With a tempo in bpm there is a two-beat count-in and one swara per beat.
+   The **Live pitch guide** switch shows what you are singing as you go.
+3. **Compare.** Each tile turns green (matched, with the cents), amber (a little high
+   or low), red (a different swara, named) or grey (not heard). **Replay** plays your
+   take, **Try again** goes back to singing, **Full review** opens the saved session.
+   The score and its two ingredients sit beside **Pitch details**, which lists every
+   note with what was detected and the difference in cents.
 
-If you keep singing an octave below the starting note, the app offers once to lower
-it. Nothing else changes your settings mid-exercise.
+**Speeds.** The Sarali Varisai have a **Speed** switch: 1 is one swara per beat, 2 is
+two, 3 is four, as in the traditional three speeds. The pace is the tala beat and does
+not change; the swaras get faster inside it. A tile marked **hold 2** is a karvai, a
+note held for two counts.
 
-**Tanpura and note guide.** Two header controls shape how much help you get:
+**Drone.** **♫ Drone** in the top bar starts a tanpura tuned to your Sa with its own
+volume. Keep it soft, or use headphones, so the microphone hears your voice.
 
-- **♫ Tanpura** starts a drone tuned to your Sa (Pa · Sa · Sa · lower Sa) with its own
-  volume slider. Keep it soft, or use headphones, so the microphone hears your voice
-  rather than the drone.
-- **♪ Note guide** on means the app plays each target note as it comes up and again
-  after a miss. Off means silence: you find each note against the drone, and only
-  the Play button gives a hint.
+## 4. Written guidance
 
-Start with both on. When the notes come easily, switch the note guide off and keep
-the drone: that is how a tanpura is used in real practice, and it trains the ear to
-place every swara from Sa alone.
-
-## 4. Read the review
-
-The review opens with **Your next step**: one observation ("Ri was a little high")
-and one button, such as **Practise Sa–Ri–Ga–Ri–Sa**. Tap it and the app sets up
-that short drill for you. Below that:
-
-- **What you sang**: the recording, and a chart where shaded bands are the notes the
-  exercise asked for and dots are what you sang. Play the recording and a line moves
-  along the chart. Tap a dot to see what it was, replay just that note, hear the
-  target tone, or **Retry** that note as a drill.
-- **Explore a note**: one chip per note with a verdict (On pitch, A little high,
-  Not matched). Tap one to jump to it on the chart.
-- **Practice guidance**: tap **Get practice guidance** for a written review from
-  Claude. It works from the pitch measurements and the lesson text only, so it can
-  advise on pitch, not on tone, breath or diction. Needs your API key.
-- **Exact measurements** and **Add a practice note** are folded away at the bottom.
+On a saved session, **Get practice guidance** sends the lesson text and the pitch
+measurements to Claude and stores the reply. It can advise on pitch and sequence, not
+on tone, breath or diction. Needs your API key.
 
 ## 5. Lessons, in order
 
-Carnatic lessons come first in the picker. A good first fortnight:
-
-1. **First notes**, until every swara is green on the first try. Shankarabharanam is
-   one common starting raga; the Mayamalavagowla version is another.
-2. **Sustain Sa**: three six-second holds.
-3. **Sarali Varisai 1**, slowly. Then Sarali 2 and Janta 1.
-4. **Mayamalavagowla** and **Mohanam** to hear different scales from the same Sa.
-
-Western lessons (major scale, arpeggio) are further down if you want them; they use
-the same Sa and the same note names unless you switch to Western names in Settings.
+1. **Find Sa** and **Sa & Pa** until both come out green every time.
+2. **First notes** at your pace, then at 60 bpm.
+3. **Sarali Varisai 1** at first speed, then second, then third. Move to the next
+   varisai only when the third speed is mostly green.
+4. **Mayamalavagowla** and **Mohanam** to hear other scales from the same Sa.
 
 ## 6. How to improve
 

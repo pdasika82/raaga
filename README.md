@@ -22,15 +22,18 @@ feedback on that lesson.
   reply with the session. You need your own API key from
   https://console.anthropic.com/settings/keys, entered once in Settings.
 
-## Two builds
+## What's here
 
-- `Raaga/` + `Packages/RaagaCore/`: native SwiftUI iOS app (needs Xcode).
-- `web/`: **Raaga Steps**, a Progressive Web App that asks for one swara at a time.
-  Published at https://pdasika82.github.io/raaga/steps/. See `web/README.md`.
-- `web2/`: **Raaga Echo**, a second web app with a listen-and-repeat flow (hear the phrase,
-  sing it back, compare), sharing `web/src/core` and `web/src/audio`. Published at
-  https://pdasika82.github.io/raaga/echo/.
-- `site/`: the home page at https://pdasika82.github.io/raaga/ that links to both.
+- `web2/`: **Raaga**, the app. A Progressive Web App: listen to a phrase at a chosen
+  speed, sing it back at your own pace or to a beat, compare note by note, with a
+  tanpura drone, a guided Sa finder, all 14 Sarali Varisai in three speeds, and
+  Claude practice guidance. Published at https://pdasika82.github.io/raaga/.
+- `web/`: the earlier note-by-note web app ("Raaga Steps"), **deprecated**. Its
+  `src/core`, `src/audio`, `src/storage` and `src/llm` modules are shared with `web2/`
+  and its unit tests still run in CI; the app itself is no longer built or published.
+- `Raaga/` + `Packages/RaagaCore/`: the native SwiftUI iOS version (needs Xcode),
+  kept for a possible App Store build later.
+- `site/`: redirect stubs for the old `/steps/` and `/echo/` addresses.
 
 ## Layout
 
@@ -41,7 +44,8 @@ Raaga/                       iOS app (SwiftUI)
   Audio/PlaybackController   plays saved sessions
   Storage/                   sessions on disk, custom lessons, keychain for the API key
   Views/                     Practice (tuner + record), Sessions, Session detail, Settings
-web/                         PWA version (Vite + TypeScript), see web/README.md
+web2/                        the web app (Vite + TypeScript), see web2/README.md
+web/                         deprecated note-by-note app; core modules shared with web2
 Packages/RaagaCore/          platform-independent Swift package with unit tests
   PitchDetector.swift        YIN pitch detection
   Scale.swift                scales/ragas as semitone sets, nearest-note/cents maths
