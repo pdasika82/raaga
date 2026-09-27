@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'worklet.js'],
       manifest: {
-        name: 'Raaga',
-        short_name: 'Raaga',
+        name: 'Raaga Steps',
+        short_name: 'Steps',
         description: 'Singing practice: live pitch against scales and ragas, recordings, and coach feedback.',
         theme_color: '#7b3f6e',
         background_color: '#faf9fb',

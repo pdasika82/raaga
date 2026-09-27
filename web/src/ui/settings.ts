@@ -93,7 +93,7 @@ export class SettingsView {
         'section',
         { class: 'card' },
         h('h3', {}, 'Other version'),
-        h('a', { href: 'v2/', class: 'link small' }, 'Open the listen & repeat version ›'),
+        h('a', { href: '../echo/', class: 'link small' }, 'Open Raaga Echo (listen and repeat) ›'), h('a', { href: '../', class: 'link small' }, 'All apps ›'),
         h('h3', {}, 'First-time guide'),
         h('button', { class: 'link small', onClick: () => this.app.update({ onboarded: false }) }, 'Show the three-step introduction on Practice again ›'),
         h('h3', {}, 'Install on iPhone'),

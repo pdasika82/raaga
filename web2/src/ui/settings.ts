@@ -32,7 +32,7 @@ export class SettingsView {
         h('label', { class: 'field' }, h('span', {}, 'Note names'), notation),
         h('label', { class: 'field' }, h('span', {}, 'A4 reference (Hz)'), a4),
         h('div', { class: 'muted tiny' }, 'Sa and the starting octave are set from the header.')),
-      h('section', { class: 'card' }, h('h3', {}, 'Other version'), h('a', { href: '../', class: 'link' }, 'Open the note-by-note version ›')),
+      h('section', { class: 'card' }, h('h3', {}, 'Other version'), h('a', { href: '../steps/', class: 'link' }, 'Open Raaga Steps (one note at a time) ›'), h('a', { href: '../', class: 'link' }, 'All apps ›')),
     );
   }
 }

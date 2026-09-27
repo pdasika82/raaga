@@ -15,8 +15,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'worklet.js'],
       manifest: {
-        name: 'Raaga · Listen & repeat',
-        short_name: 'Raaga LR',
+        name: 'Raaga Echo',
+        short_name: 'Echo',
         description: 'Listen to a phrase, sing it back, compare.',
         theme_color: '#7b3f6e',
         background_color: '#faf9fb',

@@ -47,7 +47,7 @@ export class App {
       this.tabs.set(route, btn);
       nav.append(btn);
     }
-    this.root.replaceChildren(h('header', { class: 'top' }, h('h1', {}, 'Raaga')), this.content, nav);
+    this.root.replaceChildren(h('header', { class: 'top' }, h('h1', {}, 'Raaga Steps')), this.content, nav);
     void requestPersistence();
     window.addEventListener('hashchange', () => this.applyHash());
     this.applyHash();

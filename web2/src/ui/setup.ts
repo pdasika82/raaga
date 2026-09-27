@@ -19,7 +19,7 @@ export function topBar(app: App, route: Route, tradition: string): HTMLElement {
   vol.addEventListener('input', () => { tanpura.volume = Number(vol.value); app.update({ droneVolume: Number(vol.value) }); });
   const tab = (r: Route, label: string) => h('button', { class: `link${route === r || (route === 'session' && r === 'sessions') ? ' active' : ''}`, onClick: () => app.navigate(r) }, label);
   return h('header', { class: 'topbar' },
-    h('span', { class: 'brand' }, h('span', { class: 'logo' }, 'Sa'), h('b', {}, 'Practice'), h('span', { class: 'divider' }), h('span', { class: 'muted' }, tradition)),
+    h('span', { class: 'brand' }, h('span', { class: 'logo' }, 'Sa'), h('b', {}, 'Raaga Echo'), h('span', { class: 'divider' }), h('span', { class: 'muted' }, tradition)),
     h('span', { class: 'topbar-right' },
       h('span', { class: 'lr-tabs' }, tab('practice', 'Practice'), tab('sessions', 'Sessions'), tab('settings', 'Settings')),
       h('span', { class: 'row' }, droneBtn, vol),

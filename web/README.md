@@ -36,8 +36,8 @@ Any static host works. Examples:
 - **Cloudflare Pages / Netlify / Vercel:** point at this folder, build command
   `npm run build`, output directory `dist`.
 - **GitHub Pages:** already wired. `.github/workflows/pages.yml` builds this folder with
-  `BASE_PATH=/raaga/` on every push to `main` that touches `web/` and publishes it to
-  https://pdasika82.github.io/raaga/. The repo must be public on a free GitHub plan.
+  `BASE_PATH=/raaga/steps/`, `web2/` with `/raaga/echo/`, and the `site/` home page, and
+  publishes them together at https://pdasika82.github.io/raaga/ on every push to `main`.
 
 The service worker caches the app shell so it opens offline; feedback requests still
 need a connection.
