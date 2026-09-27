@@ -3,13 +3,14 @@ import { nextStep } from '@core/guidance';
 import { lessonScale } from '@core/lesson';
 import { midiFromHz, westernName, type PitchFrame } from '@core/pitch';
 import { newSession, type PracticeSession } from '@core/session';
-import { analyze } from '@core/analyzer';
+import { analyze, hasVoice, score, type PerformanceReport } from '@core/analyzer';
 import { degreeSthana, describeSemitone, detectedLabel, parseSequence, scaleGlossary, startingMidi, tokenLabel, tokenMidi, tokenSpoken, type Token } from '@core/swara';
 import { ExampleStore, SessionStore } from '@storage/db';
 import { BPM_OPTIONS, PRACTICES, YOUR_PACE, type Practice } from '../core/practices';
 import { compareFree, compareTake, toTargetMarks, type BeatTarget, type TakeComparison } from '../core/repeat';
 import type { App } from './app';
 import { clear, h } from './dom';
+import { showScoreGuide } from './guide';
 import { showPitchReference } from './reference';
 import { showPitchSetup } from './setup';
 import { playTone } from './tone';
@@ -151,7 +152,9 @@ export class PracticeView {
               h('span', { class: 'spacer' }),
               h('button', { class: 'link', onClick: () => this.startOver() }, 'Start over'))),
           h('details', { class: 'details-row', open: true },
-            h('summary', {}, h('span', {}, 'Pitch details ', h('button', { class: 'info', title: 'Pitch reference', 'aria-label': 'Pitch reference', onClick: (e) => { e.preventDefault(); showPitchReference(this.app as never, scale); } }, 'ⓘ'))),
+            h('summary', {},
+              h('span', {}, 'Pitch details ', h('button', { class: 'info', title: 'Pitch reference', 'aria-label': 'Pitch reference', onClick: (e) => { e.preventDefault(); showPitchReference(this.app as never, scale); } }, 'ⓘ')),
+              this.step === 'compare' ? this.scoreBadge() : null),
             this.step === 'compare' && this.comparison ? this.compareTable() : h('table', { class: 'detail-table' },
               h('thead', {}, h('tr', {}, h('th', {}, 'Target'), h('th', {}, 'Detected'), h('th', {}, 'Difference from target'))),
               h('tbody', {}, h('tr', {}, this.dTarget, this.dDetected, this.dDiff))),
@@ -225,13 +228,31 @@ export class PracticeView {
       h('div', { class: 'stage-foot' }, h('span', { class: 'muted small' }, 'Green matched, amber slightly off, red a different note, grey not heard.'), this.sessionId ? h('button', { class: 'link small', onClick: () => this.app.openSession(this.sessionId!) }, 'Full review →') : null));
   }
 
+  private lastReport(): PerformanceReport | null {
+    const session = this.lastSession;
+    if (!session) return null;
+    return analyze(session.samples, lessonScale(this.practice), session.tonic, session.a4, { totalSeconds: session.duration });
+  }
+
+  /** Session score for the last take, shown beside Pitch details on the Compare step. */
+  private scoreBadge(): HTMLElement | null {
+    const r = this.lastReport();
+    if (!r) return null;
+    const sc = score(r);
+    const cls = !hasVoice(r) ? 'none' : sc >= 80 ? 'good' : sc >= 55 ? 'mid' : 'low';
+    return h('span', { class: 'row score-row', onClick: (e) => e.preventDefault() },
+      h('span', { class: 'muted small' }, `Within ±20¢ ${Math.round(r.within20 * 100)}% · on scale ${Math.round(r.scaleToneFraction * 100)}%`),
+      h('span', { class: `badge badge-${cls} badge-sm`, title: 'Session score' }, hasVoice(r) ? `Score ${sc}` : 'Score –'),
+      h('button', { class: 'link small', onClick: (e) => { e.preventDefault(); showScoreGuide(); } }, 'What does it mean? ›'));
+  }
+
   private compareLead(): string {
     if (!this.sessionId || !this.comparison) return '';
     const session = this.lastSession;
     if (!session) return '';
-    const scale = lessonScale(this.practice);
-    const report = analyze(session.samples, scale, session.tonic, session.a4, { totalSeconds: session.duration });
-    return nextStep(session, report, scale, this.app.prefs.notation).headline;
+    const report = this.lastReport();
+    if (!report) return '';
+    return nextStep(session, report, lessonScale(this.practice), this.app.prefs.notation).headline;
   }
   private lastSession: PracticeSession | null = null;
 

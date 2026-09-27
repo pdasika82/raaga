@@ -352,3 +352,6 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .drone-btn.on { color: var(--in-tune); }
 .tanpura-vol { width: 80px; accent-color: var(--accent); }
 .tanpura-vol[hidden] { display: none; }
+.details-row summary { align-items: center; gap: 12px; }
+.details-row summary::after { margin-left: auto; }
+.score-row { gap: 10px; }
