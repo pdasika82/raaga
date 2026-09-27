@@ -355,3 +355,6 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .details-row summary { align-items: center; gap: 12px; }
 .details-row summary::after { margin-left: auto; }
 .score-row { gap: 10px; }
+.details-row summary > span:first-child { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.score-row { flex-wrap: nowrap; margin-left: auto; margin-right: 12px; white-space: nowrap; }
+@media (max-width: 720px) { .details-row summary { flex-wrap: wrap; } .score-row { margin-left: 0; flex-wrap: wrap; white-space: normal; } }
