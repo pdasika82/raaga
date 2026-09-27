@@ -76,14 +76,24 @@ export class Tanpura {
     const master = ctx.createGain();
     master.gain.value = 0.35;
     master.connect(ctx.destination);
-    const strings = [saMidi - 5, saMidi, saMidi, saMidi - 12];
+    const sa = saMidi < 52 ? saMidi + 12 : saMidi;
+    const strings = [sa - 5, sa, sa, sa - 12];
     for (let i = 0, at = 0.05; at < seconds; i++, at += this.period) this.pluck(hzFromMidi(strings[i % 4], a4), at, ctx, master);
     return ctx.startRendering();
   }
 
+  /**
+   * Sa for the drone. A tanpura is never strung as low as a bass singer's starting note, and
+   * phone speakers reproduce little below ~100 Hz, so a Sa under E3 is played an octave up.
+   */
+  private droneSa(): number {
+    return this.saMidi < 52 ? this.saMidi + 12 : this.saMidi;
+  }
+
   private strings(): number[] {
     // Pa below Sa, Sa, Sa, Sa an octave below
-    return [this.saMidi - 5, this.saMidi, this.saMidi, this.saMidi - 12];
+    const sa = this.droneSa();
+    return [sa - 5, sa, sa, sa - 12];
   }
 
   private schedule(): void {
