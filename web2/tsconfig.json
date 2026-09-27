@@ -9,7 +9,6 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "types": ["vite/client", "vite-plugin-pwa/client"],
-    "baseUrl": ".",
     "paths": {
       "@core/*": ["../web/src/core/*"],
       "@audio/*": ["../web/src/audio/*"],
