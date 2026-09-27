@@ -92,6 +92,8 @@ export class SettingsView {
       h(
         'section',
         { class: 'card' },
+        h('h3', {}, 'Other version'),
+        h('a', { href: 'v2/', class: 'link small' }, 'Open the listen & repeat version ›'),
         h('h3', {}, 'First-time guide'),
         h('button', { class: 'link small', onClick: () => this.app.update({ onboarded: false }) }, 'Show the three-step introduction on Practice again ›'),
         h('h3', {}, 'Install on iPhone'),

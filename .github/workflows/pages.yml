@@ -4,7 +4,7 @@ name: Deploy web app to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['web/**', '.github/workflows/pages.yml']
+    paths: ['web/**', 'web2/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -34,6 +34,11 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /raaga/
+      - name: Build the listen-and-repeat app under /v2
+        run: npm run build && mkdir -p ../web/dist/v2 && cp -r dist/. ../web/dist/v2/
+        working-directory: web2
+        env:
+          BASE_PATH: /raaga/v2/
       - uses: actions/configure-pages@v5
         with:
           enablement: true

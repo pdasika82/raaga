@@ -27,6 +27,9 @@ feedback on that lesson.
 - `Raaga/` + `Packages/RaagaCore/`: native SwiftUI iOS app (needs Xcode).
 - `web/`: the same app as a Progressive Web App you can open in Safari and add to the
   home screen with no Xcode or Apple account. See `web/README.md`.
+- `web2/`: a second web app with a listen-and-repeat flow (hear the phrase, sing it back,
+  compare), sharing `web/src/core` and `web/src/audio`. Published at `/v2/` next to the
+  first for side-by-side comparison.
 
 ## Layout
 

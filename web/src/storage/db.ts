@@ -6,17 +6,22 @@ interface RaagaDB extends DBSchema {
   sessions: { key: string; value: PracticeSession; indexes: { date: string } };
   recordings: { key: string; value: { id: string; blob: Blob } };
   lessons: { key: string; value: Lesson };
+  /** a teacher's example recording per lesson id */
+  examples: { key: string; value: { id: string; blob: Blob; name: string } };
 }
 
 let dbPromise: Promise<IDBPDatabase<RaagaDB>> | null = null;
 
 function db(): Promise<IDBPDatabase<RaagaDB>> {
-  dbPromise ??= openDB<RaagaDB>('raaga', 1, {
-    upgrade(d) {
-      const s = d.createObjectStore('sessions', { keyPath: 'id' });
-      s.createIndex('date', 'date');
-      d.createObjectStore('recordings', { keyPath: 'id' });
-      d.createObjectStore('lessons', { keyPath: 'id' });
+  dbPromise ??= openDB<RaagaDB>('raaga', 2, {
+    upgrade(d, oldVersion) {
+      if (oldVersion < 1) {
+        const s = d.createObjectStore('sessions', { keyPath: 'id' });
+        s.createIndex('date', 'date');
+        d.createObjectStore('recordings', { keyPath: 'id' });
+        d.createObjectStore('lessons', { keyPath: 'id' });
+      }
+      if (oldVersion < 2) d.createObjectStore('examples', { keyPath: 'id' });
     },
   });
   return dbPromise;
@@ -54,6 +59,18 @@ export const LessonStore = {
   },
   async delete(id: string): Promise<void> {
     await (await db()).delete('lessons', id);
+  },
+};
+
+export const ExampleStore = {
+  async get(lessonId: string): Promise<{ blob: Blob; name: string } | undefined> {
+    return (await db()).get('examples', lessonId);
+  },
+  async save(lessonId: string, blob: Blob, name: string): Promise<void> {
+    await (await db()).put('examples', { id: lessonId, blob, name });
+  },
+  async delete(lessonId: string): Promise<void> {
+    await (await db()).delete('examples', lessonId);
   },
 };
 

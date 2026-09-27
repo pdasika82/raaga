@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "types": ["vite/client", "vite-plugin-pwa/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["../web/src/core/*"],
+      "@audio/*": ["../web/src/audio/*"],
+      "@storage/*": ["../web/src/storage/*"],
+      "@llm/*": ["../web/src/llm/*"]
+    }
+  },
+  "include": ["src", "../web/src/core", "../web/src/audio", "../web/src/storage", "../web/src/llm"]
+}
