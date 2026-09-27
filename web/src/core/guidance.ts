@@ -25,6 +25,8 @@ export interface LiveInput {
   a4: number;
   notation: Notation;
   silentFor: number;
+  /** what to say about holding, e.g. 'Hold it for about a second.' */
+  holdHint?: string;
 }
 
 /** Turn one microphone frame into short guidance toward a target note. */
@@ -34,7 +36,7 @@ export function liveGuidance(i: LiveInput): LiveGuidance {
     if (frame.rms >= 0.01 && frame.clarity > 0.2) {
       return { kind: 'unclear', headline: "Can't hear clearly", detail: 'Sing a steady "aa", a little louder.', cents: null, detected: 'Unclear' };
     }
-    return { kind: 'silent', headline: `Sing ${i.targetName}`, detail: i.silentFor > 2 ? 'Hold it for about a second.' : '', cents: null, detected: 'Nothing yet' };
+    return { kind: 'silent', headline: `Sing ${i.targetName}`, detail: i.silentFor > 2 ? (i.holdHint ?? 'Hold it for about a second.') : '', cents: null, detected: 'Nothing yet' };
   }
   const midi = midiFromHz(frame.frequency, i.a4);
   const detected = detectedLabel(midi, i.scale, i.notation, i.tonic);

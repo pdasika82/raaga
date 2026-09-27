@@ -334,14 +334,16 @@ export class PracticeView {
     // Still holding the note that was just judged: wait for a new onset before judging again.
     if (this.carry != null) {
       if (sungMidi != null && Math.abs(sungMidi - this.carry) <= 0.6) {
-        if (!(this.flash && now < this.flash.until)) this.renderGuidance({ kind: 'silent', headline: `Now sing ${targetName}`, detail: 'Take a breath, then hold it.', cents: null, detected: detectedLabel(sungMidi, scale, prefs.notation, prefs.tonic) });
+        if (!(this.flash && now < this.flash.until)) this.renderGuidance({ kind: 'silent', headline: `Now sing ${targetName}`, detail: prefs.holdNotes ? 'Take a breath, then hold it.' : 'Take a breath, then sing it.', cents: null, detected: detectedLabel(sungMidi, scale, prefs.notation, prefs.tonic) });
         else this.renderGuidance({ kind: 'silent', headline: '', detail: '', cents: null, detected: '' });
         return;
       }
       if (sungMidi != null || now - this.lastVoiced > 300) this.carry = null;
     }
 
-    const g = liveGuidance({ frame: f, targetMidi, targetName, scale, tonic: prefs.tonic, a4: prefs.a4, notation: prefs.notation, silentFor: (now - this.lastVoiced) / 1000 });
+    const hold = this.holdSeconds();
+    const holdHint = !prefs.holdNotes ? 'Sing it steadily.' : hold >= 0.95 ? `Hold it for ${hold === 1 ? 'about a second' : `${hold} seconds`}.` : `Hold it for about ${hold} seconds.`;
+    const g = liveGuidance({ frame: f, targetMidi, targetName, scale, tonic: prefs.tonic, a4: prefs.a4, notation: prefs.notation, silentFor: (now - this.lastVoiced) / 1000, holdHint });
     this.renderGuidance(g);
     this.trackQuality(g.kind, now);
 
