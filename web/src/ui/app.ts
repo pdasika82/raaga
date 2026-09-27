@@ -75,6 +75,12 @@ export class App {
     this.goPractice();
   }
 
+  /** Practise one swara on its own: three holds of the same note in the lesson's scale. */
+  startSwaraDrill(lesson: Lesson, token: string, spoken: string): void {
+    this.drill = { id: `drill-${Date.now()}`, title: `${spoken} only`, instructions: `Sing ${spoken} three times. Hold each one until it turns green.`, scaleId: lesson.scaleId, isBuiltIn: false, sequence: `${token} ${token} ${token}`, hold: lesson.hold ?? 1 };
+    this.goPractice();
+  }
+
   clearDrill(): void {
     this.drill = null;
     this.practice?.refresh();

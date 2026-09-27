@@ -130,6 +130,7 @@ export class PracticeView {
       this.el.append(h('div', { class: 'practice-grid' },
         h('section', { class: 'card exercise center' },
           guided ? this.renderTiles(scale) : h('p', { class: 'muted small' }, 'Free singing: nothing is prompted, every note is accepted.'),
+          guided ? h('div', { class: 'muted tiny' }, 'Tap a swara to practise it on its own.') : null,
           h('button', { class: 'btn btn-big', onClick: () => this.startPractice() }, 'Start practice'),
           h('div', { class: 'muted tiny' }, 'Three-second countdown, then recording.'),
           h('button', { class: 'link small', onClick: () => { this.tunerMode = true; this.render(); } }, 'Just use the pitch tuner ›')),
@@ -179,7 +180,12 @@ export class PracticeView {
               h('div', { class: 'gauge2' }, h('div', { class: 'gauge2-track' }), h('div', { class: 'gauge2-zone' }), h('div', { class: 'gauge2-center' }), this.needle),
               h('div', { class: 'gauge-labels' }, h('span', {}, 'Lower'), h('span', {}, 'Target'), h('span', {}, 'Higher')),
               h('div', { class: 'row center-row' }, h('button', { class: 'btn play-btn', onClick: () => void this.playTarget() }, '🔈 Play'), pauseBtn)),
-            h('div', { class: 'row space footer-row' }, h('button', { class: 'link', onClick: () => this.skipTarget() }, 'Skip note'), finishBtn)),
+            h('div', { class: 'row space footer-row' },
+              h('span', { class: 'row' },
+                h('button', { class: 'link', onClick: () => this.skipTarget() }, 'Skip note'),
+                h('button', { class: 'link muted', onClick: () => this.restart() }, 'Restart'),
+                h('button', { class: 'link muted', onClick: () => void this.discard() }, 'Discard')),
+              finishBtn)),
           h('details', { class: 'details', open: true },
             h('summary', {}, 'Pitch details ', h('button', { class: 'info', title: 'Pitch reference', 'aria-label': 'Pitch reference', onClick: (e) => { e.preventDefault(); showPitchReference(this.app, scale); } }, 'ⓘ')),
             h('table', { class: 'detail-table' },
@@ -190,7 +196,7 @@ export class PracticeView {
       this.updateTargetHeader();
     } else {
       this.el.append(h('div', { class: 'practice-grid' },
-        h('div', { class: 'exercise-col' }, this.meter.el, h('section', { class: 'controls' }, finishBtn)), setup), this.status);
+        h('div', { class: 'exercise-col' }, this.meter.el, h('section', { class: 'controls' }, h('button', { class: 'link muted', onClick: () => void this.discard() }, 'Discard'), finishBtn)), setup), this.status);
       this.meter.setScale(scale, prefs.tonic, prefs.notation);
     }
   }
@@ -216,7 +222,13 @@ export class PracticeView {
     this.tokens.forEach((tok, i) => {
       const done = this.phase === 'recording' && i < this.index;
       const cur = this.phase === 'recording' && i === this.index;
-      this.tiles.append(h('span', { class: `tile${cur ? ' current' : ''}${done ? ' done' : ''}` }, tokenLabel(tok, prefs.notation, prefs.tonic, scale)));
+      const label = tokenLabel(tok, prefs.notation, prefs.tonic, scale);
+      const spoken = tokenSpoken(tok, prefs.notation, prefs.tonic, scale);
+      this.tiles.append(h('button', {
+        class: `tile${cur ? ' current' : ''}${done ? ' done' : ''}`,
+        title: this.phase === 'recording' ? `Jump to ${spoken}` : `Practise ${spoken} only`,
+        onClick: () => (this.phase === 'recording' ? this.jumpTo(i) : this.app.startSwaraDrill(this.lesson, tok.raw, spoken)),
+      }, label));
     });
     return this.tiles;
   }
@@ -456,6 +468,49 @@ export class PracticeView {
     this.needle.className = `gneedle g-${g.kind}`;
     this.dDetected.textContent = g.detected ? g.detected[0].toUpperCase() + g.detected.slice(1) : '—';
     this.dDiff.textContent = g.cents == null ? '—' : `${g.cents > 0 ? '+' : '−'}${Math.abs(g.cents)} cents`;
+  }
+
+  /** Make tile i the current target without judging anything. */
+  private jumpTo(i: number): void {
+    if (this.phase !== 'recording' || i < 0 || i >= this.tokens.length) return;
+    this.window = [];
+    this.carry = null;
+    this.offer.hidden = true;
+    this.index = i;
+    this.targets[i].start = this.capture.elapsed;
+    this.updateTargetHeader();
+  }
+
+  /** Start the sequence over; the recording keeps running, attempts so far are dropped. */
+  private restart(): void {
+    if (this.phase !== 'recording') return;
+    const scale = lessonScale(this.lesson);
+    const t = this.capture.elapsed;
+    this.targets = this.tokens.map((tok, i) => ({ index: i, token: tok.raw, midi: tokenMidi(tok, scale, this.saMidi), start: i === 0 ? t : 0, matchedAt: null, cents: null, attempts: 0 }));
+    this.attemptCount = 0;
+    clear(this.attemptRows);
+    const count = this.el.querySelector('.attempts .count');
+    if (count) count.textContent = '0';
+    this.octaveMisses = 0;
+    this.offer.hidden = true;
+    this.flash = null;
+    this.jumpTo(0);
+  }
+
+  /** Stop and throw the recording away. */
+  private async discard(): Promise<void> {
+    if (this.phase !== 'recording') return;
+    if (!confirm('Discard this recording? Nothing will be saved.')) return;
+    this.phase = 'idle';
+    if (this.ticker) window.clearInterval(this.ticker);
+    this.ticker = null;
+    this.unsub?.();
+    this.unsub = null;
+    if (this.capture.paused) this.capture.resumeRecording();
+    await this.capture.endRecording();
+    await this.capture.stop();
+    this.status.textContent = 'Recording discarded.';
+    this.render();
   }
 
   private skipTarget(): void {
