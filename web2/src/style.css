@@ -365,3 +365,12 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .seg.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .practice-group { display: flex; flex-direction: column; gap: 4px; }
 .practice-group + .practice-group { margin-top: 8px; }
+.vdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; background: var(--track); }
+.vdot-match { background: var(--in-tune); }
+.vdot-near { background: var(--close); }
+.vdot-wrong { background: var(--off-scale); }
+.vdot-silent { background: var(--border); }
+.row-match .diff { color: var(--in-tune); }
+.row-near .diff { color: var(--close); }
+.row-wrong .diff { color: var(--off-scale); }
+.row-silent td { color: var(--fg-muted); }

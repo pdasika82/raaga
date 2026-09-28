@@ -287,11 +287,14 @@ export class PracticeView {
     const { notation, tonic } = this.app.prefs;
     return h('table', { class: 'detail-table' },
       h('thead', {}, h('tr', {}, h('th', {}, 'Beat'), h('th', {}, 'Target'), h('th', {}, 'Detected'), h('th', {}, 'Difference'))),
-      h('tbody', {}, ...this.comparison!.results.map((r, i) => h('tr', {},
-        h('td', {}, String(i + 1)),
-        h('td', {}, `${r.token} · ${westernName(r.targetMidi)}`),
-        h('td', {}, r.detectedMidi == null ? '—' : detectedLabel(r.detectedMidi, scale, notation, tonic).replace(/^\w/, (c) => c.toUpperCase())),
-        h('td', {}, r.cents == null ? '—' : `${r.cents > 0 ? '+' : '−'}${Math.abs(r.cents)} cents`)))));
+      h('tbody', {}, ...this.comparison!.results.map((r, i) => {
+        const label = r.verdict === 'match' ? 'on pitch' : r.verdict === 'near' ? (r.cents! > 0 ? 'a little high' : 'a little low') : r.verdict === 'wrong' ? 'different note' : 'not heard';
+        return h('tr', { class: `row-${r.verdict}` },
+          h('td', {}, h('span', { class: `vdot vdot-${r.verdict}`, title: label, 'aria-label': label }), String(i + 1)),
+          h('td', {}, `${r.token} · ${westernName(r.targetMidi)}`),
+          h('td', {}, r.detectedMidi == null ? '—' : detectedLabel(r.detectedMidi, scale, notation, tonic).replace(/^\w/, (c) => c.toUpperCase())),
+          h('td', { class: 'diff' }, r.cents == null ? '—' : `${r.cents > 0 ? '+' : '−'}${Math.abs(r.cents)} cents`, h('span', { class: 'muted tiny' }, ` ${label}`)));
+      })));
   }
 
   private renderSwaras(): void {
