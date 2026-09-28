@@ -378,3 +378,5 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .choice-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .choice-row .chip { min-width: 0; padding: 6px 12px; }
 .choice-row .chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.select-all { gap: 6px; cursor: pointer; }
+.list-item input[type=checkbox] { width: 18px; height: 18px; flex: 0 0 auto; }

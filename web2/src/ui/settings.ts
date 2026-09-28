@@ -16,6 +16,8 @@ export class SettingsView {
     const notation = h('select', { class: 'select' });
     for (const n of Object.keys(NOTATION_TITLES) as Notation[]) notation.append(h('option', { value: n, selected: n === p.notation }, NOTATION_TITLES[n]));
     notation.addEventListener('change', () => this.app.update({ notation: notation.value as Notation }));
+    const saveToggle = h('input', { type: 'checkbox', checked: p.saveTakes }) as HTMLInputElement;
+    saveToggle.addEventListener('change', () => this.app.update({ saveTakes: saveToggle.checked }));
     const a4 = h('input', { class: 'input', type: 'number', min: 415, max: 466, step: 1, value: p.a4 }) as HTMLInputElement;
     a4.addEventListener('change', () => this.app.update({ a4: Number(a4.value) || 440 }));
     clear(this.el).append(
@@ -27,6 +29,10 @@ export class SettingsView {
           h('button', { class: 'btn btn-secondary', onClick: () => { this.app.update({ apiKey: '' }); show(); } }, 'Remove')),
         keyStatus,
         h('p', { class: 'muted tiny' }, `Stored only in this browser. Used for practice guidance with the ${DEFAULT_MODEL} model.`)),
+      h('section', { class: 'card' },
+        h('h3', {}, 'Practice'),
+        h('label', { class: 'field' }, h('span', {}, 'Save each take under Sessions'), saveToggle),
+        h('div', { class: 'muted tiny' }, 'Off: Compare still works and you can replay the take, but nothing is kept once you leave the page.')),
       h('section', { class: 'card' },
         h('h3', {}, 'Display'),
         h('label', { class: 'field' }, h('span', {}, 'Note names'), notation),

@@ -308,7 +308,7 @@ export class PracticeView {
         h('span', { class: 'muted small' }, 'Green matched, amber slightly off, red a different note, grey not heard.'),
         h('span', { class: 'row' },
           worstTok && !this.isSingle ? h('button', { class: 'link small', onClick: () => this.practiseSingle(worstTok) }, `Practise ${this.singleName(worstTok, lessonScale(this.practice))} on its own ›`) : null,
-          this.sessionId ? h('button', { class: 'link small', onClick: () => this.app.openSession(this.sessionId!) }, 'Full review →') : null)));
+          this.sessionId ? h('button', { class: 'link small', onClick: () => this.app.openSession(this.sessionId!) }, 'Full review →') : h('span', { class: 'muted small' }, 'Not saved (Settings › Practice)'))));
   }
 
   /** One line for a single-swara take: the swara, its tuning, and how steady it was. */
@@ -521,8 +521,12 @@ export class PracticeView {
       id: crypto.randomUUID(), lesson: this.practice, tonic: prefs.tonic, a4: prefs.a4, duration: result.duration, audioMime: result.mime, samples: result.samples,
       mode: 'guided', lessonSequence: this.tokens.map((t) => t.raw), targets: toTargetMarks(c, this.noteDur),
     });
-    await SessionStore.save(session, result.blob);
-    this.sessionId = session.id;
+    if (prefs.saveTakes) {
+      await SessionStore.save(session, result.blob);
+      this.sessionId = session.id;
+    } else {
+      this.sessionId = null;
+    }
     this.lastSession = session;
     this.beatIndex = -1;
     this.step = 'compare';

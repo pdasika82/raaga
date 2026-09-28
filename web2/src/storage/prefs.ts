@@ -15,10 +15,12 @@ export interface Prefs {
   speed: Record<string, 1 | 2 | 3>;
   /** timed mode: repeat the phrase until Stop, keep the best pass */
   loop: boolean;
+  /** save each take under Sessions */
+  saveTakes: boolean;
 }
 
 const KEY = 'raaga2.prefs';
-const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {}, speed: {}, loop: true };
+const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {}, speed: {}, loop: true, saveTakes: true };
 
 export function loadPrefs(): Prefs {
   try {

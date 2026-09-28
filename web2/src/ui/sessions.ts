@@ -34,14 +34,40 @@ export class SessionsView {
       this.el.append(h('section', { class: 'card empty' }, h('h3', {}, 'No sessions yet'), h('p', { class: 'muted' }, 'Start a practice on the Practice tab and it will show up here.')));
       return;
     }
-    this.el.append(h('div', { class: 'row space' }, h('span', { class: 'muted small' }, `${sessions.length} session${sessions.length === 1 ? '' : 's'}`), h('button', { class: 'link small', onClick: () => showScoreGuide() }, 'What does the score mean? ›')));
+    const selected = new Set<string>();
+    const countEl = h('span', { class: 'muted small' }, `${sessions.length} session${sessions.length === 1 ? '' : 's'}`);
+    const deleteBtn = h('button', { class: 'btn btn-danger btn-sm', disabled: true }, 'Delete selected');
+    const selectAll = h('input', { type: 'checkbox', 'aria-label': 'Select all' }) as HTMLInputElement;
+    const boxes = new Map<string, HTMLInputElement>();
+    const sync = () => {
+      deleteBtn.disabled = selected.size === 0;
+      deleteBtn.textContent = selected.size ? `Delete ${selected.size} selected` : 'Delete selected';
+      selectAll.checked = selected.size === sessions.length && sessions.length > 0;
+      selectAll.indeterminate = selected.size > 0 && selected.size < sessions.length;
+    };
+    selectAll.addEventListener('change', () => {
+      for (const s of sessions) { if (selectAll.checked) selected.add(s.id); else selected.delete(s.id); boxes.get(s.id)!.checked = selectAll.checked; }
+      sync();
+    });
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(`Delete ${selected.size} session${selected.size === 1 ? '' : 's'} and their recordings?`)) return;
+      for (const id of selected) await SessionStore.delete(id);
+      await this.refresh();
+    });
+    this.el.append(h('div', { class: 'row space' },
+      h('span', { class: 'row' }, h('label', { class: 'row select-all' }, selectAll, h('span', { class: 'muted small' }, 'All')), countEl, deleteBtn),
+      h('button', { class: 'link small', onClick: () => showScoreGuide() }, 'What does the score mean? ›')));
     const list = h('ul', { class: 'list' });
     for (const s of sessions) {
       const r = report(s);
       const matched = s.targets?.filter((t) => t.matchedAt != null).length;
+      const box = h('input', { type: 'checkbox', 'aria-label': `Select ${s.lessonTitle} session`, onClick: (e) => e.stopPropagation() }) as HTMLInputElement;
+      box.addEventListener('change', () => { if (box.checked) selected.add(s.id); else selected.delete(s.id); sync(); });
+      boxes.set(s.id, box);
       const row = h(
         'li',
         { class: 'list-item', onClick: () => this.app.openSession(s.id) },
+        box,
         h('div', { class: 'grow' },
           h('div', { class: 'title' }, s.lessonTitle),
           h('div', { class: 'muted small' }, `${scaleById(s.scaleId).name} · Sa ${westernPitchClassName(s.tonic)} · ${formatTime(s.duration)}${s.targets ? ` · ${matched}/${s.targets.length} notes` : ''}`),
