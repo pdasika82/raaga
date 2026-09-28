@@ -74,3 +74,16 @@ describe('karvai and speeds', () => {
     expect(c.results.map((r) => r.verdict)).toEqual(['match', 'match', 'match']);
   });
 });
+
+import { singleSwaraSequence } from './practices';
+describe('single swara shapes', () => {
+  const deg = ['S', 'R', 'G', 'M', 'P', 'D', 'N'];
+  it('builds the three shapes', () => {
+    expect(singleSwaraSequence('G', 'fromSa', deg)).toBe('S , G , S ,');
+    expect(singleSwaraSequence('G', 'hold', deg)).toBe('G , , ,');
+    expect(singleSwaraSequence('G', 'neighbours', deg)).toBe('R G M G R');
+    expect(singleSwaraSequence("S'", 'neighbours', deg)).toBe("N S' R' S' N");
+    expect(singleSwaraSequence('P,', 'neighbours', deg)).toBe('M, P, D, P, M,');
+    expect(singleSwaraSequence('G', 'neighbours', ['S', 'R', 'G', 'P', 'D'])).toBe('R G P G R');
+  });
+});

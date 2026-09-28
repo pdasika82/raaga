@@ -6,7 +6,8 @@ import { newSession, type PracticeSession } from '@core/session';
 import { analyze, hasVoice, score, type PerformanceReport } from '@core/analyzer';
 import { degreeSthana, describeSemitone, detectedLabel, parseSequence, scaleGlossary, startingMidi, tokenLabel, tokenMidi, tokenSpoken, type Token } from '@core/swara';
 import { ExampleStore, SessionStore } from '@storage/db';
-import { BPM_OPTIONS, NOTES_PER_BEAT, PRACTICES, YOUR_PACE, type Practice } from '../core/practices';
+import { BPM_OPTIONS, NOTES_PER_BEAT, PRACTICES, SINGLE_SHAPES, SINGLE_SWARA_ID, YOUR_PACE, singleSwaraSequence, type Practice, type SingleShape } from '../core/practices';
+import { resolveDegrees } from '@core/swara';
 import { compareFree, compareTake, toTargetMarks, type BeatTarget, type TakeComparison } from '../core/repeat';
 import type { App } from './app';
 import { clear, h } from './dom';
@@ -54,10 +55,33 @@ export class PracticeView {
     this.render();
   }
 
+  private single: { token: string; shape: SingleShape } = { token: 'G', shape: 'fromSa' };
+
+  private get isSingle(): boolean {
+    return this.app.lesson().id === SINGLE_SWARA_ID;
+  }
+
   private get practice(): Practice {
     const l = this.app.lesson();
-    const base = PRACTICES.find((p) => p.id === l.id);
-    return base ?? { ...l, subtitle: l.sequence ?? '', bpm: 60, mode: 'LISTEN & REPEAT', group: 'Drill' };
+    const base = PRACTICES.find((p) => p.id === l.id) ?? { ...l, subtitle: l.sequence ?? '', bpm: 60, mode: 'LISTEN & REPEAT' as const, group: 'Drill' };
+    if (base.id !== SINGLE_SWARA_ID) return base;
+    const scale = lessonScale(base);
+    const degrees = Object.keys(resolveDegrees(scale));
+    const shape = SINGLE_SHAPES.find((x) => x.id === this.single.shape)!;
+    const name = this.singleName(this.single.token, scale);
+    return { ...base, title: `One swara: ${name}`, subtitle: shape.label, instructions: shape.hint, sequence: singleSwaraSequence(this.single.token, this.single.shape, degrees) };
+  }
+
+  private singleName(token: string, scale: ReturnType<typeof lessonScale>): string {
+    const tok = parseSequence(token)[0];
+    return tok ? tokenSpoken(tok, this.app.prefs.notation, this.app.prefs.tonic, scale) : token;
+  }
+
+  /** Switch to the One swara practice with a given swara selected. */
+  practiseSingle(token: string, shape: SingleShape = 'fromSa'): void {
+    this.single = { token, shape };
+    this.app.drill = null;
+    this.app.setPractice(SINGLE_SWARA_ID);
   }
 
   private get bpm(): number {
@@ -182,7 +206,7 @@ export class PracticeView {
           h('details', { class: 'details-row', open: true },
             h('summary', {},
               h('span', {}, 'Pitch details ', h('button', { class: 'info', title: 'Pitch reference', 'aria-label': 'Pitch reference', onClick: (e) => { e.preventDefault(); showPitchReference(this.app as never, scale); } }, 'ⓘ')),
-              this.step === 'compare' ? this.scoreBadge() : null),
+              this.step === 'compare' && !this.isSingle ? this.scoreBadge() : null),
             this.step === 'compare' && this.comparison ? this.compareTable() : h('table', { class: 'detail-table' },
               h('thead', {}, h('tr', {}, h('th', {}, 'Target'), h('th', {}, 'Detected'), h('th', {}, 'Difference from target'))),
               h('tbody', {}, h('tr', {}, this.dTarget, this.dDetected, this.dDiff))),
@@ -210,11 +234,27 @@ export class PracticeView {
     this.renderSwaras();
   }
 
+  private singlePicker(): HTMLElement {
+    const scale = lessonScale(this.practice);
+    const degrees = resolveDegrees(scale);
+    const choices = [...(Object.keys(degrees) as string[]).map((f) => f), "S'", 'P,'];
+    const { prefs } = this.app;
+    return h('div', { class: 'single-picker' },
+      h('div', { class: 'muted small' }, 'Which swara?'),
+      h('div', { class: 'choice-row' }, ...choices.map((tok) => {
+        const t = parseSequence(tok)[0];
+        return h('button', { class: `chip${tok === this.single.token ? ' on' : ''}`, onClick: () => { this.single = { ...this.single, token: tok }; this.render(); } }, tokenLabel(t, prefs.notation, prefs.tonic, scale));
+      })),
+      h('div', { class: 'muted small' }, 'How?'),
+      h('div', { class: 'choice-row' }, ...SINGLE_SHAPES.map((sh) => h('button', { class: `chip${sh.id === this.single.shape ? ' on' : ''}`, title: sh.hint, onClick: () => { this.single = { ...this.single, shape: sh.id }; this.render(); } }, sh.label))));
+  }
+
   private listenStage(lengthText: string): HTMLElement {
     const guide = h('input', { type: 'checkbox', checked: this.app.prefs.livePitchGuide }) as HTMLInputElement;
     guide.addEventListener('change', () => this.app.update({ livePitchGuide: guide.checked }));
     return h('div', { class: 'stage' },
       h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, this.example ? "TEACHER'S EXAMPLE" : 'TONE GUIDE'), h('span', { class: 'muted' }, lengthText)),
+      this.isSingle && this.phase === 'idle' && !this.playing && this.listenCount == null ? this.singlePicker() : null,
       h('h2', {}, this.listenCount != null ? 'Get ready' : this.playing ? 'Listen' : 'Listen to the phrase'),
       h('p', { class: 'lead' }, this.practice.instructions),
       this.listenCount != null ? h('div', { class: 'count-in' }, String(this.listenCount)) : null,
@@ -252,17 +292,38 @@ export class PracticeView {
   private compareStage(): HTMLElement {
     const c = this.comparison!;
     const n = c.results.length;
-    const headline = c.matched === n ? `All ${n} matched` : `${c.matched} of ${n} matched`;
+    const headline = this.isSingle ? this.singleResult() : c.matched === n ? `All ${n} matched` : `${c.matched} of ${n} matched`;
+    const worst = [...c.results].sort((a, b) => Math.abs(b.cents ?? 999) - Math.abs(a.cents ?? 999))[0];
+    const worstTok = worst && (worst.verdict === 'wrong' || worst.verdict === 'near' || worst.verdict === 'silent') ? worst.token : null;
     return h('div', { class: 'stage' },
       h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'COMPARE'), h('span', { class: 'muted' }, this.freePace ? 'your pace' : `${this.passesCompared > 1 ? `best of ${this.passesCompared} passes · ` : ''}${c.offsetBeats ? `timing ${c.offsetBeats > 0 ? 'late' : 'early'} by ${Math.abs(c.offsetBeats).toFixed(1)} ${this.speed === 1 ? 'beat' : 'count'}` : 'timing on the beat'}`)),
       h('h2', {}, headline),
-      h('p', { class: 'lead' }, this.compareLead()),
+      h('p', { class: 'lead' }, this.isSingle ? (SINGLE_SHAPES.find((x) => x.id === this.single.shape)?.hint ?? '') : this.compareLead()),
       this.swaras,
       h('div', { class: 'row', style: 'justify-content:center' },
         h('button', { class: 'btn', onClick: () => this.replay() }, '▶ Replay'),
         h('button', { class: 'btn btn-secondary', onClick: () => { this.step = 'turn'; this.render(); } }, 'Try again'),
         h('button', { class: 'btn btn-secondary', onClick: () => { this.step = 'listen'; this.render(); } }, 'Listen again')),
-      h('div', { class: 'stage-foot' }, h('span', { class: 'muted small' }, 'Green matched, amber slightly off, red a different note, grey not heard.'), this.sessionId ? h('button', { class: 'link small', onClick: () => this.app.openSession(this.sessionId!) }, 'Full review →') : null));
+      h('div', { class: 'stage-foot' },
+        h('span', { class: 'muted small' }, 'Green matched, amber slightly off, red a different note, grey not heard.'),
+        h('span', { class: 'row' },
+          worstTok && !this.isSingle ? h('button', { class: 'link small', onClick: () => this.practiseSingle(worstTok) }, `Practise ${this.singleName(worstTok, lessonScale(this.practice))} on its own ›`) : null,
+          this.sessionId ? h('button', { class: 'link small', onClick: () => this.app.openSession(this.sessionId!) }, 'Full review →') : null)));
+  }
+
+  /** One line for a single-swara take: the swara, its tuning, and how steady it was. */
+  private singleResult(): string {
+    const c = this.comparison!;
+    const scale = lessonScale(this.practice);
+    const name = this.singleName(this.single.token, scale);
+    const mine = c.results.filter((r) => r.token === this.single.token);
+    const heard = mine.filter((r) => r.cents != null);
+    if (!heard.length) return `${name} was not heard`;
+    const mean = Math.round(heard.reduce((a, r) => a + r.cents!, 0) / heard.length);
+    const tuning = Math.abs(mean) <= 10 ? 'on pitch' : Math.abs(mean) <= 20 ? `${Math.abs(mean)} cents ${mean > 0 ? 'high' : 'low'}, close` : Math.abs(mean) <= 60 ? `${Math.abs(mean)} cents ${mean > 0 ? 'high' : 'low'}` : 'landed on a different note';
+    const r = this.lastReport();
+    const steady = r?.stabilityCents == null ? '' : r.stabilityCents <= 8 ? ', steady' : r.stabilityCents <= 15 ? `, slight wobble ±${Math.round(r.stabilityCents)}¢` : `, wobbled ±${Math.round(r.stabilityCents)}¢`;
+    return `${name}: ${tuning}${steady}`;
   }
 
   private lastReport(): PerformanceReport | null {

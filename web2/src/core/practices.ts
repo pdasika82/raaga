@@ -45,10 +45,34 @@ export const SARALI: Practice[] = [
   v(14, 'Rests throughout', "S R G M P , P , | D D P , M M P , | D N S' , S' N D P | S' N D P M G R S"),
 ];
 
+export const SINGLE_SWARA_ID = 'single_swara';
+export type SingleShape = 'fromSa' | 'hold' | 'neighbours';
+export const SINGLE_SHAPES: { id: SingleShape; label: string; hint: string }[] = [
+  { id: 'fromSa', label: 'Hear it from Sa', hint: 'Sa, the swara, Sa. Place it from home and come back.' },
+  { id: 'hold', label: 'Hold it', hint: 'The swara alone for four counts. Aim for a straight, steady tone.' },
+  { id: 'neighbours', label: 'With its neighbours', hint: 'The swara between the notes on either side of it.' },
+];
+
+const ORDER = ['S', 'R', 'G', 'M', 'P', 'D', 'N'];
+/** Build the sequence for a single-swara drill. `token` is like "G", "S'" or "P,". */
+export function singleSwaraSequence(token: string, shape: SingleShape, scaleDegrees: string[]): string {
+  const fam = token[0];
+  const suffix = token.slice(1);
+  if (shape === 'hold') return `${token} , , ,`;
+  if (shape === 'fromSa') return `S , ${token} , S ,`;
+  const present = ORDER.filter((f) => scaleDegrees.includes(f));
+  const i = present.indexOf(fam);
+  if (i < 0) return `S , ${token} , S ,`;
+  const prev = i > 0 ? present[i - 1] + suffix : (suffix === "'" ? present[present.length - 1] : 'S');
+  const next = i < present.length - 1 ? present[i + 1] + suffix : (suffix === '' ? "S'" : token);
+  return `${prev} ${token} ${next} ${token} ${prev}`;
+}
+
 export const PRACTICES: Practice[] = [
   p('find_sa', 'Find Sa', 'One steady note', 'shankarabharanam', 'S S S S', 0, 'Sing Sa steadily for four beats. Return to it before every phrase.'),
   p('sa_pa', 'Sa & Pa', 'Hear the relationship', 'shankarabharanam', 'S P S P S', 0, 'Sa and Pa are the two fixed notes. Hear the interval, then sing it.'),
   p('first_notes', 'First notes', 'Sa–Ri–Ga–Ri–Sa', 'shankarabharanam', 'S R G R S', 0, 'Hear it once, then sing it back at the same pace.'),
+  p(SINGLE_SWARA_ID, 'One swara', 'Pick a note, three ways', 'shankarabharanam', 'S , G , S ,', 0, 'Pick a swara and how to practise it.'),
   ...SARALI,
   { ...p('mayamalavagowla', 'Mayamalavagowla', 'Up and back, small steps', 'mayamalavagowla', "S R G M P D N S' | S' N D P M G R S", 45, 'Ri and Dha sit close to Sa and Pa. Listen for the small steps.'), group: 'Other ragas', speeds: [1, 2, 3] },
   { ...p('mohanam', 'Mohanam', 'Five notes', 'mohanam', "S R G P D S' | S' D P G R S", 50, 'There is no Ma or Ni. Jump cleanly over them.'), group: 'Other ragas', speeds: [1, 2, 3] },
