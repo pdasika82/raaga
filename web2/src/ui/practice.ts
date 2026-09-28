@@ -101,6 +101,10 @@ export class PracticeView {
   private lastVoiced = 0;
   private detected: { midi: number; at: number }[] = [];
   private finishTimer: number | null = null;
+  private pass = 0;
+  private passStarts: number[] = [];
+  private passEl = h('span', { class: 'muted small pass' }, '');
+  private passesCompared = 1;
 
   refresh(): void {
     if (this.phase !== 'idle') return;
@@ -226,8 +230,9 @@ export class PracticeView {
     return h('div', { class: 'stage' },
       h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'YOUR TURN'), h('span', { class: 'muted' }, lengthText)),
       h('h2', {}, this.phase === 'countin' ? 'Ready…' : this.phase === 'recording' ? 'Sing' : 'Sing it back'),
-      h('p', { class: 'lead' }, this.freePace ? 'Sing each swara and hold it a moment. The next one lights up when yours is heard.' : 'One swara per beat, after a two-beat count-in.'),
+      h('p', { class: 'lead' }, this.freePace ? 'Sing each swara and hold it a moment. The next one lights up when yours is heard.' : this.app.prefs.loop ? 'One swara per beat, after a two-beat count-in. The phrase repeats until you stop; your best pass counts.' : 'One swara per beat, after a two-beat count-in.'),
       this.phase === 'countin' ? this.countEl : null,
+      !this.freePace && this.phase === 'recording' ? this.passEl : null,
       this.swaras,
       live ? h('div', { class: 'live-guide' }, this.detectedEl, this.guideText,
         h('div', { class: 'gauge2', style: 'width:100%;max-width:480px' }, h('div', { class: 'gauge2-track' }), h('div', { class: 'gauge2-zone' }), h('div', { class: 'gauge2-center' }), this.needle),
@@ -235,7 +240,13 @@ export class PracticeView {
       this.phase === 'idle'
         ? h('button', { class: 'btn cta', onClick: () => void this.startSinging() }, '● Start singing')
         : h('button', { class: 'btn btn-secondary cta', onClick: () => void this.stopSinging(true) }, 'Stop'),
-      h('div', { class: 'stage-foot' }, h('button', { class: 'link small', disabled: this.phase !== 'idle', onClick: () => { this.step = 'listen'; this.render(); } }, '‹ Listen again'), h('span', { class: 'muted small' }, live ? 'Live pitch guide on' : 'Live pitch guide off')));
+      h('div', { class: 'stage-foot' },
+        h('button', { class: 'link small', disabled: this.phase !== 'idle', onClick: () => { this.step = 'listen'; this.render(); } }, '‹ Listen again'),
+        this.freePace ? h('span', { class: 'muted small' }, live ? 'Live pitch guide on' : 'Live pitch guide off') : (() => {
+          const loop = h('input', { type: 'checkbox', checked: this.app.prefs.loop, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+          loop.addEventListener('change', () => this.app.update({ loop: loop.checked }));
+          return h('label', { class: 'toggle' }, loop, h('span', {}, 'Loop until I stop'));
+        })()));
   }
 
   private compareStage(): HTMLElement {
@@ -243,7 +254,7 @@ export class PracticeView {
     const n = c.results.length;
     const headline = c.matched === n ? `All ${n} matched` : `${c.matched} of ${n} matched`;
     return h('div', { class: 'stage' },
-      h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'COMPARE'), h('span', { class: 'muted' }, this.freePace ? 'your pace' : c.offsetBeats ? `timing ${c.offsetBeats > 0 ? 'late' : 'early'} by ${Math.abs(c.offsetBeats).toFixed(1)} ${this.speed === 1 ? 'beat' : 'count'}` : 'timing on the beat')),
+      h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'COMPARE'), h('span', { class: 'muted' }, this.freePace ? 'your pace' : `${this.passesCompared > 1 ? `best of ${this.passesCompared} passes · ` : ''}${c.offsetBeats ? `timing ${c.offsetBeats > 0 ? 'late' : 'early'} by ${Math.abs(c.offsetBeats).toFixed(1)} ${this.speed === 1 ? 'beat' : 'count'}` : 'timing on the beat'}`)),
       h('h2', {}, headline),
       h('p', { class: 'lead' }, this.compareLead()),
       this.swaras,
@@ -389,9 +400,23 @@ export class PracticeView {
         if (b + 1 !== shownCount) { shownCount = b + 1; this.countEl.textContent = String(shownCount); void playTone(sa, this.app.prefs.a4, 0.12); }
         return;
       }
-      if (this.phase === 'countin') { this.phase = 'recording'; this.phraseStart = this.capture.elapsed; this.render(); }
-      const counts = (elapsed - countIn * beatMs) / (this.noteDur * 1000);
-      if (counts >= this.totalCounts + 0.6) { void this.stopSinging(false); return; }
+      if (this.phase === 'countin') { this.phase = 'recording'; this.phraseStart = this.capture.elapsed; this.pass = 0; this.passStarts = [this.phraseStart]; this.render(); }
+      const npb = NOTES_PER_BEAT[this.speed];
+      const passCounts = this.totalCounts + (this.app.prefs.loop ? npb : 0); // one beat's breath between passes
+      let counts = (elapsed - countIn * beatMs) / (this.noteDur * 1000);
+      if (!this.app.prefs.loop) {
+        if (counts >= this.totalCounts + 0.6) { void this.stopSinging(false); return; }
+      } else {
+        const passNo = Math.floor(counts / passCounts);
+        if (passNo !== this.pass) {
+          this.pass = passNo;
+          this.passStarts[passNo] = this.phraseStart + passNo * passCounts * this.noteDur;
+          void playTone(sa, this.app.prefs.a4, 0.12);
+        }
+        counts -= passNo * passCounts;
+        this.passEl.textContent = `Pass ${passNo + 1}`;
+        if (counts >= this.totalCounts) { if (this.beatIndex !== -1) { this.beatIndex = -1; this.renderSwaras(); } return; } // breath
+      }
       const offsets = this.countOffsets;
       let i = 0;
       while (i + 1 < offsets.length && counts >= offsets[i + 1]) i++;
@@ -413,10 +438,21 @@ export class PracticeView {
     this.unsub = null;
     if (this.finishTimer != null) { window.clearTimeout(this.finishTimer); this.finishTimer = null; }
     const result = await this.capture.endRecording();
-    const tooEarly = this.freePace ? this.detected.length === 0 : manual && this.beatIndex < 1;
+    const tooEarly = this.freePace ? this.detected.length === 0 : manual && this.beatIndex < 1 && this.pass === 0;
     if (!result || !wasRecording || tooEarly) { this.beatIndex = -1; this.render(); return; }
     const { prefs } = this.app;
-    const c = this.freePace ? compareFree(this.detected, this.targets) : compareTake(result.samples, this.targets, this.noteDur, this.phraseStart, prefs.a4);
+    let c: TakeComparison;
+    if (this.freePace) {
+      c = compareFree(this.detected, this.targets);
+      this.passesCompared = 1;
+    } else {
+      // score every pass (the last one may be partial) and keep the best
+      const starts = this.passStarts.length ? this.passStarts : [this.phraseStart];
+      const passes = starts.map((st) => compareTake(result.samples, this.targets, this.noteDur, st, prefs.a4));
+      const good = (x: TakeComparison) => x.matched * 10 + x.results.filter((r) => r.verdict === 'match').length;
+      c = passes.reduce((best, x) => (good(x) > good(best) ? x : best), passes[0]);
+      this.passesCompared = passes.length;
+    }
     this.comparison = c;
     if (this.takeUrl) URL.revokeObjectURL(this.takeUrl);
     this.takeUrl = URL.createObjectURL(result.blob);
