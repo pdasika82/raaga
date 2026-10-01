@@ -17,10 +17,12 @@ export interface Prefs {
   loop: boolean;
   /** save each take under Sessions */
   saveTakes: boolean;
+  /** play the tone guide alongside the singer during Your turn (for headphones) */
+  playAlong: boolean;
 }
 
 const KEY = 'raaga2.prefs';
-const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {}, speed: {}, loop: true, saveTakes: true };
+const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {}, speed: {}, loop: true, saveTakes: true, playAlong: false };
 
 export function loadPrefs(): Prefs {
   try {

@@ -282,11 +282,18 @@ export class PracticeView {
         : h('button', { class: 'btn btn-secondary cta', onClick: () => void this.stopSinging(true) }, 'Stop'),
       h('div', { class: 'stage-foot' },
         h('button', { class: 'link small', disabled: this.phase !== 'idle', onClick: () => { this.step = 'listen'; this.render(); } }, '‹ Listen again'),
-        this.freePace ? h('span', { class: 'muted small' }, live ? 'Live pitch guide on' : 'Live pitch guide off') : (() => {
-          const loop = h('input', { type: 'checkbox', checked: this.app.prefs.loop, disabled: this.phase !== 'idle' }) as HTMLInputElement;
-          loop.addEventListener('change', () => this.app.update({ loop: loop.checked }));
-          return h('label', { class: 'toggle' }, loop, h('span', {}, 'Loop until I stop'));
-        })()));
+        h('span', { class: 'row' },
+          (() => {
+            const along = h('input', { type: 'checkbox', checked: this.app.prefs.playAlong, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+            along.addEventListener('change', () => this.app.update({ playAlong: along.checked }));
+            return h('label', { class: 'toggle', title: 'The tone guide plays each swara with you. Use headphones so the microphone hears only your voice.' }, along, h('span', {}, 'Play along 🎧'));
+          })(),
+          this.freePace ? null : (() => {
+            const loop = h('input', { type: 'checkbox', checked: this.app.prefs.loop, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+            loop.addEventListener('change', () => this.app.update({ loop: loop.checked }));
+            return h('label', { class: 'toggle' }, loop, h('span', {}, 'Loop until I stop'));
+          })())),
+      this.app.prefs.playAlong && this.phase === 'idle' ? h('div', { class: 'muted small' }, 'Play along is on: wear headphones, or the microphone will hear the guide instead of you.') : null);
   }
 
   private compareStage(): HTMLElement {
@@ -442,6 +449,7 @@ export class PracticeView {
       this.render();
       this.unsub?.();
       this.unsub = this.capture.onFrame((f) => { this.onFrame(f); this.onFreeFrame(f); });
+      this.playAlongNote(0);
       return;
     }
     this.phase = 'countin';
@@ -481,8 +489,17 @@ export class PracticeView {
       const offsets = this.countOffsets;
       let i = 0;
       while (i + 1 < offsets.length && counts >= offsets[i + 1]) i++;
-      if (i !== this.beatIndex) { this.beatIndex = i; this.renderSwaras(); }
+      if (i !== this.beatIndex) { this.beatIndex = i; this.renderSwaras(); this.playAlongNote(i); }
     }, 25);
+  }
+
+  /** With Play along on, sound the current target for its length. */
+  private playAlongNote(i: number): void {
+    if (!this.app.prefs.playAlong || this.phase !== 'recording') return;
+    const tg = this.targets[i];
+    if (!tg) return;
+    const dur = this.freePace ? 0.9 : this.noteDur * (tg.units ?? 1) * 0.92;
+    void playTone(tg.midi, this.app.prefs.a4, dur);
   }
 
   private stopSchedule(): void {
@@ -590,6 +607,7 @@ export class PracticeView {
     this.detected.push({ midi: mean, at: this.capture.elapsed - holdMs / 1000 });
     this.beatIndex = Math.min(this.targets.length - 1, this.detected.length);
     this.renderSwaras();
+    if (this.detected.length < this.targets.length) this.playAlongNote(this.beatIndex);
     if (this.detected.length >= this.targets.length) {
       this.finishTimer = window.setTimeout(() => void this.stopSinging(false), 700);
     }
