@@ -380,3 +380,5 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .choice-row .chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .select-all { gap: 6px; cursor: pointer; }
 .list-item input[type=checkbox] { width: 18px; height: 18px; flex: 0 0 auto; }
+.swara.sung { background: var(--in-tune-soft); border-color: var(--in-tune-soft); }
+.swara.sung .sub::after { content: ' ✓'; color: var(--in-tune); }

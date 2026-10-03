@@ -279,7 +279,10 @@ export class PracticeView {
         h('div', { class: 'gauge-labels', style: 'max-width:480px;width:100%' }, h('span', {}, 'Lower'), h('span', {}, 'Target'), h('span', {}, 'Higher'))) : null,
       this.phase === 'idle'
         ? h('button', { class: 'btn cta', onClick: () => void this.startSinging() }, '● Start singing')
-        : h('button', { class: 'btn btn-secondary cta', onClick: () => void this.stopSinging(true) }, 'Stop'),
+        : h('div', { class: 'row', style: 'justify-content:center' },
+            this.freePace ? h('button', { class: 'btn btn-secondary', onClick: () => this.rewindTo(Math.max(0, this.detected.length - 1)) }, '↺ Redo last note') : null,
+            h('button', { class: 'btn btn-secondary cta', onClick: () => void this.stopSinging(true) }, 'Stop')),
+      this.freePace && this.phase === 'recording' ? h('div', { class: 'muted small', style: 'text-align:center' }, 'Tap a tile you have sung to go back to it.') : null,
       h('div', { class: 'stage-foot' },
         h('button', { class: 'link small', disabled: this.phase !== 'idle', onClick: () => { this.step = 'listen'; this.render(); } }, '‹ Listen again'),
         h('span', { class: 'row' },
@@ -390,7 +393,8 @@ export class PracticeView {
         cls += ` v-${r.verdict}`;
         sub = r.verdict === 'match' ? `${r.cents! >= 0 ? '+' : ''}${r.cents}¢` : r.verdict === 'near' ? (r.cents! > 0 ? 'a little high' : 'a little low') : r.verdict === 'wrong' ? describeSemitone(Math.round(r.detectedMidi!) - prefs.tonic, scale, prefs.notation, prefs.tonic) : 'not heard';
       } else if (i === this.beatIndex && this.phase === 'recording') cls += ' current';
-      this.swaras.append(h('button', { class: cls, title: tokenSpoken(tok, prefs.notation, prefs.tonic, scale), onClick: () => { if (this.phase === 'idle') void playTone(this.targets[i].midi, prefs.a4, Math.max(0.3, 0.9 * this.noteDur * tok.units)); } },
+      else if (this.freePace && this.phase === 'recording' && i < this.detected.length) cls += ' sung';
+      this.swaras.append(h('button', { class: cls, title: tokenSpoken(tok, prefs.notation, prefs.tonic, scale), onClick: () => { if (this.phase === 'idle') void playTone(this.targets[i].midi, prefs.a4, Math.max(0.3, 0.9 * this.noteDur * tok.units)); else if (this.freePace && this.phase === 'recording') this.rewindTo(i); } },
         h('span', { class: 'name' }, name), h('span', { class: 'sub' }, sub || ' ')));
     });
   }
@@ -491,6 +495,19 @@ export class PracticeView {
       while (i + 1 < offsets.length && counts >= offsets[i + 1]) i++;
       if (i !== this.beatIndex) { this.beatIndex = i; this.renderSwaras(); this.playAlongNote(i); }
     }, 25);
+  }
+
+  /** Your pace: move the pointer back to tile i and forget what was sung from there on. */
+  private rewindTo(i: number): void {
+    if (!this.freePace || this.phase !== 'recording') return;
+    if (i > this.detected.length) return; // can't skip ahead
+    if (this.finishTimer != null) { window.clearTimeout(this.finishTimer); this.finishTimer = null; }
+    this.detected = this.detected.slice(0, i);
+    this.window = [];
+    this.carry = null;
+    this.beatIndex = i;
+    this.renderSwaras();
+    this.playAlongNote(i);
   }
 
   /** With Play along on, sound the current target for its length. */
