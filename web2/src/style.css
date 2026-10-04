@@ -384,3 +384,7 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .swara.sung .sub::after { content: ' ✓'; color: var(--in-tune); }
 .badge-btn { border: 0; font-family: inherit; cursor: pointer; }
 .badge-btn:hover { filter: brightness(0.95); }
+.hold-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hold-box[hidden] { display: none; }
+.hold-track2 { width: 100%; max-width: 420px; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.hold-fill2 { height: 100%; width: 0; background: var(--accent); transition: width 0.1s linear; }

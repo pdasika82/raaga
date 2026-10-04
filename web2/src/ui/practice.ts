@@ -129,6 +129,9 @@ export class PracticeView {
   private passStarts: number[] = [];
   private passEl = h('span', { class: 'muted small pass' }, '');
   private passesCompared = 1;
+  private holdFill = h('div', { class: 'hold-fill2' });
+  private holdText = h('span', { class: 'muted small' }, '');
+  private holdBox = h('div', { class: 'hold-box', hidden: true }, h('div', { class: 'hold-track2' }, this.holdFill), this.holdText);
 
   refresh(): void {
     if (this.phase !== 'idle') return;
@@ -273,6 +276,7 @@ export class PracticeView {
       h('p', { class: 'lead' }, this.freePace ? (this.app.prefs.advanceOnPause ? 'Sing each swara, hold it as long as you like, then pause briefly. The next one lights up after the pause.' : 'Sing each swara and hold it a moment. The next one lights up when yours is heard.') : this.app.prefs.loop ? 'One swara per beat, after a two-beat count-in. The phrase repeats until you stop; your best pass counts.' : 'One swara per beat, after a two-beat count-in.'),
       this.phase === 'countin' ? this.countEl : null,
       !this.freePace && this.phase === 'recording' ? this.passEl : null,
+      this.freePace && this.phase === 'recording' ? this.holdBox : null,
       this.swaras,
       live ? h('div', { class: 'live-guide' }, this.detectedEl, this.guideText,
         h('div', { class: 'gauge2', style: 'width:100%;max-width:480px' }, h('div', { class: 'gauge2-track' }), h('div', { class: 'gauge2-zone' }), h('div', { class: 'gauge2-center' }), this.needle),
@@ -507,6 +511,7 @@ export class PracticeView {
     if (this.finishTimer != null) { window.clearTimeout(this.finishTimer); this.finishTimer = null; }
     this.detected = this.detected.slice(0, i);
     this.window = [];
+    this.holdFill.style.width = '0%';
     this.carry = null;
     this.beatIndex = i;
     this.renderSwaras();
@@ -618,16 +623,26 @@ export class PracticeView {
       if (midi != null && Math.abs(midi - this.carry) <= 0.9) return;
       if (midi != null || now - this.lastVoiced > 250) this.carry = null;
     }
-    const holdMs = 350;
+    // a held tile ("hold N") must last N seconds, matching the tone guide in Your pace
+    const units = this.targets[this.detected.length]?.units ?? 1;
+    const holdMs = units > 1 ? units * 1000 : 350;
     if (midi != null) this.window.push({ at: now, midi });
     this.window = this.window.filter((w) => now - w.at <= holdMs + 120);
-    if (!voiced && this.window.length && now - this.lastVoiced > 500) { this.window = []; return; }
+    const showHold = (covered: number) => {
+      this.holdBox.hidden = units <= 1;
+      if (units <= 1) return;
+      this.holdFill.style.width = `${Math.round(Math.min(1, covered / holdMs) * 100)}%`;
+      this.holdText.textContent = `Holding ${(Math.min(covered, holdMs) / 1000).toFixed(1)} of ${units} s`;
+    };
+    if (!voiced && this.window.length && now - this.lastVoiced > 500) { this.window = []; showHold(0); return; }
     const sorted = this.window.map((w) => w.midi).sort((a, b) => a - b);
-    if (sorted.length < 5) return;
+    if (sorted.length < 5) { showHold(0); return; }
     const median = sorted[sorted.length >> 1];
     const steady = this.window.filter((w) => Math.abs(w.midi - median) <= 0.6);
     const covered = now - this.window[0].at;
+    showHold(covered);
     if (covered < holdMs || steady.length < this.window.length * 0.7) return;
+    showHold(0);
     const mean = steady.reduce((a, w) => a + w.midi, 0) / steady.length;
     this.window = [];
     this.carry = mean;
