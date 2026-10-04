@@ -41,7 +41,9 @@ button shows every note from low to high with its frequency.
 ## 3. Practise: listen, sing, compare
 
 Pick a practice on the right. Start with **Find Sa**, then **Sa & Pa**, then **First
-notes**; the Sarali Varisai come after.
+notes**; the Sarali Varisai come after. Above the list, choose the raga for these:
+**Mayamalavagowla** is the traditional first raga, **Shankarabharanam** has the same
+notes as the Western major scale. Ask your teacher which they use.
 
 1. **Listen.** Tap **Listen to example**. After a 3-2-1 count the tone guide plays the
    phrase and the tiles light up in turn. Tap any tile to hear that swara alone.

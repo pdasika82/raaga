@@ -87,3 +87,13 @@ export function practiceById(id: string): Practice {
 /** 0 = your pace: the next swara lights up when the current one is heard. */
 export const BPM_OPTIONS = [0, 40, 45, 50, 60, 72, 90];
 export const YOUR_PACE = 0;
+
+export const BEGINNER_RAGAS = [
+  { id: 'shankarabharanam', name: 'Shankarabharanam', note: 'Same notes as the major scale; even steps.' },
+  { id: 'mayamalavagowla', name: 'Mayamalavagowla', note: 'The traditional first raga: Ri and Dha sit just above Sa and Pa.' },
+] as const;
+
+/** First steps and Sarali Varisai follow the learner's chosen beginner raga. */
+export function usesBeginnerRaga(p: Practice): boolean {
+  return p.group === 'First steps' || p.group === 'Sarali Varisai';
+}

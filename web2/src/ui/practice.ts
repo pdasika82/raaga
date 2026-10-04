@@ -6,7 +6,7 @@ import { newSession, type PracticeSession } from '@core/session';
 import { analyze, type PerformanceReport } from '@core/analyzer';
 import { degreeSthana, describeSemitone, detectedLabel, parseSequence, scaleGlossary, startingMidi, tokenLabel, tokenMidi, tokenSpoken, type Token } from '@core/swara';
 import { ExampleStore, SessionStore } from '@storage/db';
-import { BPM_OPTIONS, NOTES_PER_BEAT, PRACTICES, SINGLE_SHAPES, SINGLE_SWARA_ID, YOUR_PACE, singleSwaraSequence, type Practice, type SingleShape } from '../core/practices';
+import { BEGINNER_RAGAS, BPM_OPTIONS, NOTES_PER_BEAT, PRACTICES, usesBeginnerRaga, SINGLE_SHAPES, SINGLE_SWARA_ID, YOUR_PACE, singleSwaraSequence, type Practice, type SingleShape } from '../core/practices';
 import { resolveDegrees } from '@core/swara';
 import { compareFree, compareTake, toTargetMarks, type BeatTarget, type TakeComparison } from '../core/repeat';
 import type { App } from './app';
@@ -63,7 +63,8 @@ export class PracticeView {
 
   private get practice(): Practice {
     const l = this.app.lesson();
-    const base = PRACTICES.find((p) => p.id === l.id) ?? { ...l, subtitle: l.sequence ?? '', bpm: 60, mode: 'LISTEN & REPEAT' as const, group: 'Drill' };
+    const found = PRACTICES.find((p) => p.id === l.id) ?? { ...l, subtitle: l.sequence ?? '', bpm: 60, mode: 'LISTEN & REPEAT' as const, group: 'Drill' };
+    const base = usesBeginnerRaga(found) ? { ...found, scaleId: this.app.prefs.beginnerRaga } : found;
     if (base.id !== SINGLE_SWARA_ID) return base;
     const scale = lessonScale(base);
     const degrees = Object.keys(resolveDegrees(scale));
@@ -218,6 +219,13 @@ export class PracticeView {
         h('aside', { class: 'side' },
           h('section', { class: 'card' },
             h('h3', {}, 'Choose a practice'),
+            (() => {
+              const sel = h('select', { class: 'select', disabled: this.phase !== 'idle', 'aria-label': 'Beginner raga' }) as HTMLSelectElement;
+              for (const r of BEGINNER_RAGAS) sel.append(h('option', { value: r.id, selected: r.id === this.app.prefs.beginnerRaga }, r.name));
+              sel.addEventListener('change', () => { this.comparison = null; this.step = 'listen'; this.listened = false; this.app.update({ beginnerRaga: sel.value as 'shankarabharanam' | 'mayamalavagowla' }); });
+              const note = BEGINNER_RAGAS.find((r) => r.id === this.app.prefs.beginnerRaga)!.note;
+              return h('label', { class: 'field col raga-pick' }, h('span', { class: 'muted small' }, 'Raga for First steps and Sarali'), sel, h('span', { class: 'muted tiny' }, note));
+            })(),
             drill ? h('button', { class: 'link small', onClick: () => this.app.clearDrill() }, '‹ Back to practices') : null,
             ...[...new Set(PRACTICES.map((p) => p.group))].map((group) => h('div', { class: 'practice-group' },
               h('div', { class: 'eyebrow' }, group),

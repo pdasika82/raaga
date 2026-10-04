@@ -388,3 +388,4 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .hold-box[hidden] { display: none; }
 .hold-track2 { width: 100%; max-width: 420px; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .hold-fill2 { height: 100%; width: 0; background: var(--accent); transition: width 0.1s linear; }
+.raga-pick { margin: 2px 0 8px; }

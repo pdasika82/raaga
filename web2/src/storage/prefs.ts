@@ -21,10 +21,12 @@ export interface Prefs {
   playAlong: boolean;
   /** your pace: count the next swara only after a pause (else after a change of note) */
   advanceOnPause: boolean;
+  /** raga for First steps and Sarali Varisai */
+  beginnerRaga: 'shankarabharanam' | 'mayamalavagowla';
 }
 
 const KEY = 'raaga2.prefs';
-const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {}, speed: {}, loop: true, saveTakes: true, playAlong: false, advanceOnPause: true };
+const defaults: Prefs = { notation: 'indian', tonic: 7, saOctave: 2, a4: 440, practiceId: 'first_notes', apiKey: '', livePitchGuide: false, droneVolume: 0.5, bpm: {}, speed: {}, loop: true, saveTakes: true, playAlong: false, advanceOnPause: true, beginnerRaga: 'shankarabharanam' };
 
 export function loadPrefs(): Prefs {
   try {

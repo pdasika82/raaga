@@ -1,5 +1,6 @@
 import { NOTATION_TITLES, type Notation } from '@core/pitch';
 import { DEFAULT_MODEL } from '@llm/claude';
+import { BEGINNER_RAGAS } from '../core/practices';
 import type { App } from './app';
 import { clear, h } from './dom';
 
@@ -31,6 +32,12 @@ export class SettingsView {
         h('p', { class: 'muted tiny' }, `Stored only in this browser. Used for practice guidance with the ${DEFAULT_MODEL} model.`)),
       h('section', { class: 'card' },
         h('h3', {}, 'Practice'),
+        h('label', { class: 'field' }, h('span', {}, 'Raga for First steps and Sarali'), (() => {
+          const sel = h('select', { class: 'select' }) as HTMLSelectElement;
+          for (const r of BEGINNER_RAGAS) sel.append(h('option', { value: r.id, selected: r.id === p.beginnerRaga }, r.name));
+          sel.addEventListener('change', () => this.app.update({ beginnerRaga: sel.value as 'shankarabharanam' | 'mayamalavagowla' }));
+          return sel;
+        })()),
         h('label', { class: 'field' }, h('span', {}, 'Save each take under Sessions'), saveToggle),
         h('div', { class: 'muted tiny' }, 'Off: Compare still works and you can replay the take, but nothing is kept once you leave the page.')),
       h('section', { class: 'card' },
