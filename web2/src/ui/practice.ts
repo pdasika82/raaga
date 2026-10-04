@@ -270,7 +270,7 @@ export class PracticeView {
     return h('div', { class: 'stage' },
       h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'YOUR TURN'), h('span', { class: 'muted' }, lengthText)),
       h('h2', {}, this.phase === 'countin' ? 'Ready…' : this.phase === 'recording' ? 'Sing' : 'Sing it back'),
-      h('p', { class: 'lead' }, this.freePace ? 'Sing each swara and hold it a moment. The next one lights up when yours is heard.' : this.app.prefs.loop ? 'One swara per beat, after a two-beat count-in. The phrase repeats until you stop; your best pass counts.' : 'One swara per beat, after a two-beat count-in.'),
+      h('p', { class: 'lead' }, this.freePace ? (this.app.prefs.advanceOnPause ? 'Sing each swara, hold it as long as you like, then pause briefly. The next one lights up after the pause.' : 'Sing each swara and hold it a moment. The next one lights up when yours is heard.') : this.app.prefs.loop ? 'One swara per beat, after a two-beat count-in. The phrase repeats until you stop; your best pass counts.' : 'One swara per beat, after a two-beat count-in.'),
       this.phase === 'countin' ? this.countEl : null,
       !this.freePace && this.phase === 'recording' ? this.passEl : null,
       this.swaras,
@@ -291,7 +291,11 @@ export class PracticeView {
             along.addEventListener('change', () => this.app.update({ playAlong: along.checked }));
             return h('label', { class: 'toggle', title: 'The tone guide plays each swara with you. Use headphones so the microphone hears only your voice.' }, along, h('span', {}, 'Play along 🎧'));
           })(),
-          this.freePace ? null : (() => {
+          this.freePace ? (() => {
+            const pause = h('input', { type: 'checkbox', checked: this.app.prefs.advanceOnPause, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+            pause.addEventListener('change', () => this.app.update({ advanceOnPause: pause.checked }));
+            return h('label', { class: 'toggle', title: 'On: take a short breath between swaras; a long hold counts once. Off: slide straight to the next swara.' }, pause, h('span', {}, 'Pause between swaras'));
+          })() : (() => {
             const loop = h('input', { type: 'checkbox', checked: this.app.prefs.loop, disabled: this.phase !== 'idle' }) as HTMLInputElement;
             loop.addEventListener('change', () => this.app.update({ loop: loop.checked }));
             return h('label', { class: 'toggle' }, loop, h('span', {}, 'Loop until I stop'));
@@ -604,6 +608,13 @@ export class PracticeView {
     const midi = voiced ? midiFromHz(f.frequency!, this.app.prefs.a4) : null;
     if (voiced) this.lastVoiced = now;
     if (this.carry != null) {
+      if (this.app.prefs.advanceOnPause) {
+        // ignore everything until the singer actually stops: a long hold counts once
+        if (voiced || now - this.lastVoiced < 400) return;
+        this.carry = null;
+        this.window = [];
+        return;
+      }
       if (midi != null && Math.abs(midi - this.carry) <= 0.9) return;
       if (midi != null || now - this.lastVoiced > 250) this.carry = null;
     }

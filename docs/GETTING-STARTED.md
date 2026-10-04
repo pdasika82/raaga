@@ -46,8 +46,9 @@ notes**; the Sarali Varisai come after.
 1. **Listen.** Tap **Listen to example**. After a 3-2-1 count the tone guide plays the
    phrase and the tiles light up in turn. Tap any tile to hear that swara alone.
 2. **Your turn.** Tap **Start singing**. With the pace set to **Your pace** there is no
-   clock: sing a swara, hold it a moment, and the next tile lights up when yours is
-   heard. With a tempo in bpm there is a two-beat count-in and one swara per beat.
+   clock: sing a swara, hold it as long as you like, then take a short breath; the next
+   tile lights up after the pause. (Turn off **Pause between swaras** if you prefer to
+   slide straight from one swara to the next.) With a tempo in bpm there is a two-beat count-in and one swara per beat.
    The **Live pitch guide** switch shows what you are singing as you go.
 3. **Compare.** Each tile turns green (matched, with the cents), amber (a little high
    or low), red (a different swara, named) or grey (not heard). **Replay** plays your
