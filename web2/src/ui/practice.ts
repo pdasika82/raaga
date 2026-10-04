@@ -224,7 +224,7 @@ export class PracticeView {
               for (const r of BEGINNER_RAGAS) sel.append(h('option', { value: r.id, selected: r.id === this.app.prefs.beginnerRaga }, r.name));
               sel.addEventListener('change', () => { this.comparison = null; this.step = 'listen'; this.listened = false; this.app.update({ beginnerRaga: sel.value as 'shankarabharanam' | 'mayamalavagowla' }); });
               const note = BEGINNER_RAGAS.find((r) => r.id === this.app.prefs.beginnerRaga)!.note;
-              return h('label', { class: 'field col raga-pick' }, h('span', { class: 'muted small' }, 'Raga for First steps and Sarali'), sel, h('span', { class: 'muted tiny' }, note));
+              return h('label', { class: 'field col raga-pick' }, h('span', { class: 'muted small' }, 'Raga for First steps and Sarali Swaralu'), sel, h('span', { class: 'muted tiny' }, note));
             })(),
             drill ? h('button', { class: 'link small', onClick: () => this.app.clearDrill() }, '‹ Back to practices') : null,
             ...[...new Set(PRACTICES.map((p) => p.group))].map((group) => h('div', { class: 'practice-group' },

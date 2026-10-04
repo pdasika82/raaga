@@ -41,7 +41,7 @@ button shows every note from low to high with its frequency.
 ## 3. Practise: listen, sing, compare
 
 Pick a practice on the right. Start with **Find Sa**, then **Sa & Pa**, then **First
-notes**; the Sarali Varisai come after. Above the list, choose the raga for these:
+notes**; the Sarali Swaralu come after. Above the list, choose the raga for these:
 **Mayamalavagowla** is the traditional first raga, **Shankarabharanam** has the same
 notes as the Western major scale. Ask your teacher which they use.
 
@@ -58,7 +58,7 @@ notes as the Western major scale. Ask your teacher which they use.
    The score and its two ingredients sit beside **Pitch details**, which lists every
    note with what was detected and the difference in cents.
 
-**Speeds.** The Sarali Varisai have a **Speed** switch: 1 is one swara per beat, 2 is
+**Speeds.** The Sarali Swaralu have a **Speed** switch: 1 is one swara per beat, 2 is
 two, 3 is four, as in the traditional three speeds. The pace is the tala beat and does
 not change; the swaras get faster inside it. A tile marked **hold 2** is a karvai, a
 note held for two counts.
@@ -76,7 +76,7 @@ on tone, breath or diction. Needs your API key.
 
 1. **Find Sa** and **Sa & Pa** until both come out green every time.
 2. **First notes** at your pace, then at 60 bpm.
-3. **Sarali Varisai 1** at first speed, then second, then third. Move to the next
+3. **Sarali Swaralu 1** at first speed, then second, then third. Move to the next
    varisai only when the third speed is mostly green.
 4. **Mayamalavagowla** and **Mohanam** to hear other scales from the same Sa.
 

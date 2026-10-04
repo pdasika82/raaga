@@ -26,7 +26,7 @@ feedback on that lesson.
 
 - `web2/`: **Raaga**, the app. A Progressive Web App: listen to a phrase at a chosen
   speed, sing it back at your own pace or to a beat, compare note by note, with a
-  tanpura drone, a guided Sa finder, all 14 Sarali Varisai in three speeds, and
+  tanpura drone, a guided Sa finder, all 14 Sarali Swaralu in three speeds, and
   Claude practice guidance. Published at https://pdasika82.github.io/raaga/.
 - `web/`: the earlier note-by-note web app ("Raaga Steps"), **deprecated**. Its
   `src/core`, `src/audio`, `src/storage` and `src/llm` modules are shared with `web2/`

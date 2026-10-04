@@ -21,7 +21,7 @@ export interface Prefs {
   playAlong: boolean;
   /** your pace: count the next swara only after a pause (else after a change of note) */
   advanceOnPause: boolean;
-  /** raga for First steps and Sarali Varisai */
+  /** raga for First steps and Sarali Swaralu */
   beginnerRaga: 'shankarabharanam' | 'mayamalavagowla';
 }
 

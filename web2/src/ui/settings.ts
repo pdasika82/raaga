@@ -32,7 +32,7 @@ export class SettingsView {
         h('p', { class: 'muted tiny' }, `Stored only in this browser. Used for practice guidance with the ${DEFAULT_MODEL} model.`)),
       h('section', { class: 'card' },
         h('h3', {}, 'Practice'),
-        h('label', { class: 'field' }, h('span', {}, 'Raga for First steps and Sarali'), (() => {
+        h('label', { class: 'field' }, h('span', {}, 'Raga for First steps and Sarali Swaralu'), (() => {
           const sel = h('select', { class: 'select' }) as HTMLSelectElement;
           for (const r of BEGINNER_RAGAS) sel.append(h('option', { value: r.id, selected: r.id === p.beginnerRaga }, r.name));
           sel.addEventListener('change', () => this.app.update({ beginnerRaga: sel.value as 'shankarabharanam' | 'mayamalavagowla' }));

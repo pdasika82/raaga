@@ -21,7 +21,7 @@ Shared code lives in `../web/src` (core, audio, storage, llm) and is reached thr
 ## Layout
 
 ```
-src/core/practices.ts   practice catalogue: first steps, Sarali Varisai 1–14, other ragas
+src/core/practices.ts   practice catalogue: first steps, Sarali Swaralu 1–14, other ragas
 src/core/repeat.ts      comparison of a take against the phrase (timed and your-pace)
 src/ui/practice.ts      Listen → Your turn → Compare
 src/ui/setup.ts         top bar, drone, Find a comfortable Sa modal

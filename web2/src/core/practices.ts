@@ -21,11 +21,11 @@ const p = (id: string, title: string, subtitle: string, scaleId: string, sequenc
 
 const ADI = 'Adi tala: a clap and three finger counts, then two clap-and-wave pairs, eight beats in all. Keep the same beat at every speed; the swaras get faster, the clap does not.';
 
-/** Sarali Varisai 1–14 in Shankarabharanam, written in first speed. "," holds the previous swara one more count. */
+/** Sarali Swaralu 1–14 in Shankarabharanam, written in first speed. "," holds the previous swara one more count. */
 const v = (n: number, subtitle: string, sequence: string): Practice => ({
-  id: `sarali_${n}`, title: `Sarali Varisai ${n}`, subtitle, scaleId: 'shankarabharanam', sequence, bpm: 45,
+  id: `sarali_${n}`, title: `Sarali Swaralu ${n}`, subtitle, scaleId: 'shankarabharanam', sequence, bpm: 45,
   instructions: 'Listen at the chosen speed, then sing it back. First speed is one swara per beat, second two, third four.',
-  isBuiltIn: true, mode: 'LISTEN & REPEAT', pulse: ADI, speeds: [1, 2, 3], group: 'Sarali Varisai',
+  isBuiltIn: true, mode: 'LISTEN & REPEAT', pulse: ADI, speeds: [1, 2, 3], group: 'Sarali Swaralu',
 });
 
 export const SARALI: Practice[] = [
@@ -93,7 +93,7 @@ export const BEGINNER_RAGAS = [
   { id: 'mayamalavagowla', name: 'Mayamalavagowla', note: 'The traditional first raga: Ri and Dha sit just above Sa and Pa.' },
 ] as const;
 
-/** First steps and Sarali Varisai follow the learner's chosen beginner raga. */
+/** First steps and Sarali Swaralu follow the learner's chosen beginner raga. */
 export function usesBeginnerRaga(p: Practice): boolean {
-  return p.group === 'First steps' || p.group === 'Sarali Varisai';
+  return p.group === 'First steps' || p.group === 'Sarali Swaralu';
 }
