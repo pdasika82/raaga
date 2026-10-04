@@ -206,7 +206,7 @@ export class PracticeView {
           h('details', { class: 'details-row', open: true },
             h('summary', {},
               h('span', {}, 'Pitch details ', h('button', { class: 'info', title: 'Pitch reference', 'aria-label': 'Pitch reference', onClick: (e) => { e.preventDefault(); showPitchReference(this.app as never, scale); } }, 'ⓘ')),
-              this.step === 'compare' && !this.isSingle ? this.scoreBadge() : null),
+              this.step === 'compare' ? this.scoreBadge() : null),
             this.step === 'compare' && this.comparison ? this.compareTable() : h('table', { class: 'detail-table' },
               h('thead', {}, h('tr', {}, h('th', {}, 'Target'), h('th', {}, 'Detected'), h('th', {}, 'Difference from target'))),
               h('tbody', {}, h('tr', {}, this.dTarget, this.dDetected, this.dDiff))),
