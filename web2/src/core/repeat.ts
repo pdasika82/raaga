@@ -73,6 +73,7 @@ export function toTargetMarks(c: TakeComparison, beat: number): TargetMark[] {
     matchedAt: r.verdict === 'match' || r.verdict === 'near' ? r.start + beat * 0.5 : null,
     cents: r.verdict === 'match' || r.verdict === 'near' ? r.cents : null,
     attempts: 1,
+    detected: r.detectedMidi,
   }));
 }
 

@@ -382,3 +382,5 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .list-item input[type=checkbox] { width: 18px; height: 18px; flex: 0 0 auto; }
 .swara.sung { background: var(--in-tune-soft); border-color: var(--in-tune-soft); }
 .swara.sung .sub::after { content: ' ✓'; color: var(--in-tune); }
+.badge-btn { border: 0; font-family: inherit; cursor: pointer; }
+.badge-btn:hover { filter: brightness(0.95); }

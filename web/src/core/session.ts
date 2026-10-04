@@ -23,6 +23,8 @@ export interface TargetMark {
   /** signed cents at the moment of matching */
   cents: number | null;
   attempts: number;
+  /** pitch actually sung for this target (fractional MIDI), when one was heard */
+  detected?: number | null;
 }
 
 export interface PracticeSession {
