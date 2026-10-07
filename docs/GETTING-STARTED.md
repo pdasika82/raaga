@@ -66,6 +66,23 @@ note held for two counts.
 **Drone.** **♫ Drone** in the top bar starts a tanpura tuned to your Sa with its own
 volume. Keep it soft, or use headphones, so the microphone hears your voice.
 
+## Free practice: singing from a book or with a teacher
+
+The **Free practice** tab listens without prompting. Pick what you're singing, or
+"Anything", press **Start listening**, sing for as long as you like, then **Stop**.
+
+- While you sing it shows the swara you're on, how far from it, and a strip of the
+  notes you've sung, coloured by tuning.
+- With a lesson picked, Stop finds every time you sang it, even repeated, at another
+  speed, or after a false start, and shows each pass as tiles with the cents. It also
+  names swaras that were consistently sharp or flat across passes, such as "Ma flat by
+  about 33¢". First and second speed follow reliably; third speed is approximate.
+- With "Anything", Stop lists each swara with how long you sang it and its average
+  tuning, and any notes outside the raga.
+
+If a lesson isn't found, check that Sa and the starting note in the top bar match the
+book or teacher.
+
 ## 4. Written guidance
 
 On a saved session, **Get practice guidance** sends the lesson text and the pitch

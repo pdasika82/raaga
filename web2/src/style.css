@@ -389,3 +389,23 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .hold-track2 { width: 100%; max-width: 420px; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .hold-fill2 { height: 100%; width: 0; background: var(--accent); transition: width 0.1s linear; }
 .raga-pick { margin: 2px 0 8px; }
+
+/* Free practice */
+.free-card { gap: 14px; }
+.free-picks { align-items: flex-end; }
+.free-live { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 0; width: 100%; }
+.free-live .row.space { width: 100%; }
+.free-name { font-size: 64px; font-weight: 500; line-height: 1; color: var(--fg-muted); }
+.free-name.g-onPitch { color: var(--in-tune); }
+.free-name.g-slightlyHigh, .free-name.g-slightlyLow { color: var(--close); }
+.free-name.g-wrongNote { color: var(--off-scale); }
+.free-strip { display: flex; gap: 4px; overflow-x: auto; width: 100%; padding: 4px 0; min-height: 36px; }
+.free-chip { flex: 0 0 auto; padding: 4px 9px; border-radius: 6px; background: var(--card-2); font-weight: 500; border: 1px solid var(--border); }
+.free-chip.acc-inTune { border-color: var(--in-tune); color: var(--in-tune); }
+.free-chip.acc-close, .free-chip.acc-off { border-color: var(--close); color: var(--close); }
+.free-chip.acc-offScale { border-color: var(--off-scale); color: var(--off-scale); }
+.free-result { gap: 12px; }
+.free-block h4 { margin: 6px 0 4px; font-size: 16px; }
+.free-block p { margin: 4px 0 8px; }
+.free-tiles { margin-top: 8px; }
+.free-how { padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px; }

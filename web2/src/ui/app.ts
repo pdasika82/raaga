@@ -7,12 +7,13 @@ import { requestPersistence } from '@storage/db';
 import { loadPrefs, savePrefs, type Prefs } from '../storage/prefs';
 import { practiceById, PRACTICES, type Practice } from '../core/practices';
 import { h } from './dom';
+import { FreePracticeView } from './free';
 import { PracticeView } from './practice';
 import { SessionDetailView, SessionsView } from './sessions';
 import { SettingsView } from './settings';
 import { topBar } from './setup';
 
-export type Route = 'practice' | 'sessions' | 'session' | 'settings';
+export type Route = 'practice' | 'free' | 'sessions' | 'session' | 'settings';
 
 /** Listen & repeat app shell. */
 export class App {
@@ -28,6 +29,7 @@ export class App {
   private sessions = new SessionsView(this as never);
   private detail = new SessionDetailView(this as never);
   private settings = new SettingsView(this);
+  private free = new FreePracticeView(this);
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -116,11 +118,13 @@ export class App {
     if (m) void this.show('session', m[1]);
     else if (location.hash === '#/sessions') void this.show('sessions');
     else if (location.hash === '#/settings') void this.show('settings');
+    else if (location.hash === '#/free') void this.show('free');
     else void this.show('practice');
   }
 
   private async show(route: Route, id?: string): Promise<void> {
     if (this.route === 'practice' && route !== 'practice') await this.practice.leave();
+    if (this.route === 'free' && route !== 'free') await this.free.leave();
     this.route = route;
     this.renderBar();
     let view: HTMLElement;
@@ -140,6 +144,10 @@ export class App {
       case 'settings':
         await this.settings.refresh();
         view = h('div', { class: 'page' }, this.settings.el);
+        break;
+      case 'free':
+        await this.free.show();
+        view = this.free.el;
         break;
     }
     this.content.replaceChildren(view);

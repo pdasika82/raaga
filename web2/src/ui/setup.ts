@@ -22,7 +22,7 @@ export function topBar(app: App, route: Route, tradition: string): HTMLElement {
   return h('header', { class: 'topbar' },
     h('span', { class: 'brand' }, h('span', { class: 'logo' }, 'Sa'), h('b', {}, 'Raaga'), h('span', { class: 'divider' }), h('span', { class: 'muted' }, tradition)),
     h('span', { class: 'topbar-right' },
-      h('span', { class: 'lr-tabs' }, tab('practice', 'Practice'), tab('sessions', 'Sessions'), tab('settings', 'Settings')),
+      h('span', { class: 'lr-tabs' }, tab('practice', 'Practice'), tab('free', 'Free practice'), tab('sessions', 'Sessions'), tab('settings', 'Settings')),
       h('span', { class: 'row' }, droneBtn, vol),
       h('button', { class: 'pitch-chip', onClick: () => showPitchSetup(app) }, h('span', {}, `Sa ${westernPitchClassName(prefs.tonic)}`), h('span', { class: 'dot' }, '·'), h('span', {}, `Start ${westernName(start)}`), h('span', { class: 'dot' }, '⌄')),
       h('button', { class: 'info', title: 'Pitch reference: every note from low to high with its frequency', 'aria-label': 'Pitch reference', onClick: () => showPitchReference(app as never) }, 'ⓘ')));
