@@ -27,6 +27,7 @@ export class FreePracticeView {
   private lastChip: number | null = null;
   private result: { session: PracticeSession; report: PerformanceReport; passes: Pass[] | null; blobUrl: string } | null = null;
   private selectedPass = 0;
+  private chartControls: HTMLElement | null = null;
 
   private bigName = h('div', { class: 'free-name' }, '—');
   private sub = h('div', { class: 'muted' }, '');
@@ -200,18 +201,29 @@ export class FreePracticeView {
     const scale = this.scale;
     const audio = h('audio', { controls: true, class: 'audio', src: blobUrl });
     const canvas = h('canvas', { class: 'chart' });
+    let chart: PitchChart | null = null;
+    const zl = h('span', { class: 'muted small zoom-level' }, '');
+    const showZoom = () => { if (chart) zl.textContent = `time ${chart.zoomLevel.toFixed(1)}× · pitch ${chart.pitchZoomLevel.toFixed(1)}×`; };
+    const btn = (label: string, title: string, fn: () => void) => h('button', { class: 'btn btn-secondary btn-sm', title, 'aria-label': title, onClick: () => { fn(); showZoom(); } }, label);
+    this.chartControls = h('div', { class: 'row zoom chart-controls' },
+      h('span', { class: 'muted small' }, 'Time'), btn('−', 'Zoom out in time', () => chart?.zoom(1 / 1.5)), btn('+', 'Zoom in on time', () => chart?.zoom(1.5)),
+      h('span', { class: 'muted small' }, 'Pitch'), btn('−', 'Zoom out in pitch', () => chart?.zoomPitch(1 / 1.4)), btn('+', 'Zoom in on pitch', () => chart?.zoomPitch(1.4)),
+      btn('Reset', 'Reset zoom', () => chart?.reset()), zl);
     requestAnimationFrame(() => {
-      const chart = new PitchChart(canvas, { samples: session.samples, scale, tonic: prefs.tonic, a4: prefs.a4, notation: prefs.notation, events: report.events });
+      chart = new PitchChart(canvas, { samples: session.samples, scale, tonic: prefs.tonic, a4: prefs.a4, notation: prefs.notation, events: report.events });
+      chart.onViewChange(showZoom);
       chart.draw();
-      audio.addEventListener('timeupdate', () => chart.setPlayhead(audio.currentTime));
-      audio.addEventListener('pause', () => chart.setPlayhead(null));
+      showZoom();
+      audio.addEventListener('timeupdate', () => chart?.setPlayhead(audio.currentTime));
+      audio.addEventListener('pause', () => chart?.setPlayhead(null));
     });
     const blocks: (HTMLElement | null)[] = [];
     if (passes) blocks.push(this.passesView(passes));
     blocks.push(this.swaraSummary(report, scale));
     return h('section', { class: 'card free-result' },
       h('div', { class: 'row space' }, h('h3', {}, 'What you sang'), h('span', { class: 'muted small' }, `${formatTime(session.duration)} · ${prefs.saveTakes ? 'saved under Sessions' : 'not saved'}`)),
-      audio, canvas,
+      audio, this.chartControls, canvas,
+      h('div', { class: 'muted tiny' }, 'Drag to move around. Pinch sideways for time, up and down for pitch. On a computer, scroll to zoom time and hold Shift while scrolling to zoom pitch. Double-click to reset.'),
       ...blocks,
       hasVoice(report) ? h('details', { class: 'details-row' }, h('summary', {}, h('span', {}, 'Every note heard')), h('p', { class: 'mono small' }, noteSequence(report, scale, prefs.tonic, prefs.notation))) : null);
   }

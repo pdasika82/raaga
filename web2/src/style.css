@@ -409,3 +409,5 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .free-block p { margin: 4px 0 8px; }
 .free-tiles { margin-top: 8px; }
 .free-how { padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.chart-controls { gap: 6px; flex-wrap: wrap; }
+.chart-controls .muted.small { margin-left: 6px; }

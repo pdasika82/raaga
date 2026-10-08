@@ -124,6 +124,8 @@ export class SessionDetailView {
       h('button', { class: 'btn btn-secondary btn-sm', title: 'Zoom out', onClick: () => chart?.zoom(1 / 1.5) }, '−'),
       zoomLabel,
       h('button', { class: 'btn btn-secondary btn-sm', title: 'Zoom in', onClick: () => chart?.zoom(1.5) }, '+'),
+      h('button', { class: 'btn btn-secondary btn-sm', title: 'Zoom out in pitch', onClick: () => chart?.zoomPitch(1 / 1.4) }, '↕−'),
+      h('button', { class: 'btn btn-secondary btn-sm', title: 'Zoom in on pitch', onClick: () => chart?.zoomPitch(1.4) }, '↕+'),
       h('button', { class: 'btn btn-secondary btn-sm', onClick: () => chart?.reset() }, 'Reset'));
     const inspector = h('div', { class: 'inspector', hidden: true });
     let stopAt: number | null = null;

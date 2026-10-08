@@ -46,12 +46,16 @@ export class PitchChart {
   private tMax: number;
   private lo: number;
   private hi: number;
+  private lo0 = 0;
+  private hi0 = 0;
+  private minMidi = 0;
+  private maxMidi = 0;
   private t0 = 0;
   private t1 = 1;
   private playhead: number | null = null;
   private pointers = new Map<number, { x: number; y: number }>();
-  private pinchStart: { dist: number; t0: number; t1: number; mid: number } | null = null;
-  private dragStart: { x: number; t0: number; t1: number } | null = null;
+  private pinchStart: { dist: number; dy: number; t0: number; t1: number; mid: number; lo: number; hi: number; midM: number } | null = null;
+  private dragStart: { x: number; y: number; t0: number; t1: number; lo: number; hi: number } | null = null;
   private downAt: { x: number; y: number } | null = null;
   private moved = false;
   private onChange: (() => void) | null = null;
@@ -67,8 +71,15 @@ export class PitchChart {
       });
     this.tMax = Math.max(data.samples[data.samples.length - 1]?.t ?? 1, 1);
     const midis = [...this.points.map((p) => p.midi), ...(data.targets ?? []).map((t) => t.midi).filter((m): m is number => m != null)];
-    this.lo = (midis.length ? Math.min(...midis) : 60) - 1.5;
-    this.hi = (midis.length ? Math.max(...midis) : 72) + 1.5;
+    // default view ignores stray readings: 2nd–98th percentile of the sung pitch, plus a margin
+    const sorted = [...midis].sort((a, b) => a - b);
+    const pct = (q: number) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))))];
+    const lo0 = sorted.length ? (sorted.length >= 20 ? pct(0.02) : sorted[0]) : 60;
+    const hi0 = sorted.length ? (sorted.length >= 20 ? pct(0.98) : sorted[sorted.length - 1]) : 72;
+    this.lo = this.lo0 = lo0 - 1.5;
+    this.hi = this.hi0 = Math.max(hi0 + 1.5, this.lo + 6);
+    this.minMidi = (sorted[0] ?? 60) - 2;
+    this.maxMidi = (sorted[sorted.length - 1] ?? 72) + 2;
     this.t1 = this.tMax;
     this.attach();
   }
@@ -86,7 +97,41 @@ export class PitchChart {
   }
 
   reset(): void {
+    this.lo = this.lo0;
+    this.hi = this.hi0;
     this.setView(0, this.tMax);
+  }
+
+  /** Zoom the pitch axis; factor > 1 zooms in, around `centerMidi` (defaults to the middle). */
+  zoomPitch(factor: number, centerMidi?: number): void {
+    const c = centerMidi ?? (this.lo + this.hi) / 2;
+    const span = Math.max(3, Math.min(this.maxMidi - this.minMidi + 3, (this.hi - this.lo) / factor));
+    const frac = (c - this.lo) / (this.hi - this.lo);
+    this.setPitch(c - span * frac, c - span * frac + span);
+  }
+
+  panPitch(dm: number): void {
+    this.setPitch(this.lo + dm, this.hi + dm);
+  }
+
+  private setPitch(lo: number, hi: number): void {
+    const span = hi - lo;
+    const minLo = Math.min(this.minMidi, this.lo0), maxHi = Math.max(this.maxMidi, this.hi0);
+    if (lo < minLo) { lo = minLo; hi = lo + span; }
+    if (hi > maxHi) { hi = maxHi; lo = Math.max(minLo, hi - span); }
+    this.lo = lo;
+    this.hi = hi;
+    this.draw();
+    this.onChange?.();
+  }
+
+  get pitchZoomLevel(): number {
+    return (this.hi0 - this.lo0) / (this.hi - this.lo);
+  }
+
+  private midiAt(py: number): number {
+    const f = Math.max(0, Math.min(1, (py - PAD.t) / (H - PAD.t - PAD.b)));
+    return this.hi - f * (this.hi - this.lo);
   }
 
   get zoomLevel(): number {
@@ -187,13 +232,14 @@ export class PitchChart {
 
   private attach(): void {
     const c = this.canvas;
-    c.style.touchAction = 'pan-y';
+    c.style.touchAction = 'none';
     c.style.cursor = 'grab';
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
       const rect = c.getBoundingClientRect();
       const t = this.tAt(e.clientX - rect.left, rect.width);
-      if (e.ctrlKey || Math.abs(e.deltaY) > Math.abs(e.deltaX)) this.zoom(e.deltaY < 0 ? 1.2 : 1 / 1.2, t);
+      if (e.shiftKey || e.altKey) this.zoomPitch(e.deltaY < 0 || e.deltaX < 0 ? 1.2 : 1 / 1.2, this.midiAt(e.clientY - rect.top));
+      else if (e.ctrlKey || Math.abs(e.deltaY) > Math.abs(e.deltaX)) this.zoom(e.deltaY < 0 ? 1.2 : 1 / 1.2, t);
       else this.pan((e.deltaX / rect.width) * (this.t1 - this.t0));
     }, { passive: false });
     c.addEventListener('pointerdown', (e) => {
@@ -202,12 +248,12 @@ export class PitchChart {
       if (this.pointers.size === 1) {
         this.downAt = { x: e.clientX, y: e.clientY };
         this.moved = false;
-        this.dragStart = { x: e.clientX, t0: this.t0, t1: this.t1 };
+        this.dragStart = { x: e.clientX, y: e.clientY, t0: this.t0, t1: this.t1, lo: this.lo, hi: this.hi };
         c.style.cursor = 'grabbing';
       } else if (this.pointers.size === 2) {
         const [a, b] = [...this.pointers.values()];
         const rect = c.getBoundingClientRect();
-        this.pinchStart = { dist: Math.abs(a.x - b.x), t0: this.t0, t1: this.t1, mid: this.tAt((a.x + b.x) / 2 - rect.left, rect.width) };
+        this.pinchStart = { dist: Math.abs(a.x - b.x), dy: Math.abs(a.y - b.y), t0: this.t0, t1: this.t1, mid: this.tAt((a.x + b.x) / 2 - rect.left, rect.width), lo: this.lo, hi: this.hi, midM: this.midiAt((a.y + b.y) / 2 - rect.top) };
         this.dragStart = null;
       }
     });
@@ -217,16 +263,29 @@ export class PitchChart {
       const rect = c.getBoundingClientRect();
       if (this.pointers.size === 2 && this.pinchStart) {
         const [a, b] = [...this.pointers.values()];
-        const dist = Math.max(10, Math.abs(a.x - b.x));
-        const factor = dist / Math.max(10, this.pinchStart.dist);
-        const span = Math.max(1, Math.min(this.tMax, (this.pinchStart.t1 - this.pinchStart.t0) / factor));
-        const frac = (this.pinchStart.mid - this.pinchStart.t0) / (this.pinchStart.t1 - this.pinchStart.t0);
-        this.setView(this.pinchStart.mid - span * frac, this.pinchStart.mid - span * frac + span);
+        const ps = this.pinchStart;
+        // horizontal spread zooms time, vertical spread zooms pitch
+        if (ps.dist > 30) {
+          const factor = Math.max(10, Math.abs(a.x - b.x)) / ps.dist;
+          const span = Math.max(1, Math.min(this.tMax, (ps.t1 - ps.t0) / factor));
+          const frac = (ps.mid - ps.t0) / (ps.t1 - ps.t0);
+          this.t0 = ps.mid - span * frac; this.t1 = this.t0 + span;
+        }
+        if (ps.dy > 30) {
+          const factor = Math.max(10, Math.abs(a.y - b.y)) / ps.dy;
+          const span = Math.max(3, (ps.hi - ps.lo) / factor);
+          const frac = (ps.midM - ps.lo) / (ps.hi - ps.lo);
+          this.setPitch(ps.midM - span * frac, ps.midM - span * frac + span);
+        }
+        this.setView(this.t0, this.t1);
       } else if (this.dragStart) {
         if (this.downAt && Math.hypot(e.clientX - this.downAt.x, e.clientY - this.downAt.y) > 6) this.moved = true;
         if (!this.moved) return;
-        const dt = -((e.clientX - this.dragStart.x) / (rect.width - PAD.l - PAD.r)) * (this.dragStart.t1 - this.dragStart.t0);
-        this.setView(this.dragStart.t0 + dt, this.dragStart.t1 + dt);
+        const ds = this.dragStart;
+        const dt = -((e.clientX - ds.x) / (rect.width - PAD.l - PAD.r)) * (ds.t1 - ds.t0);
+        const dm = ((e.clientY - ds.y) / (H - PAD.t - PAD.b)) * (ds.hi - ds.lo);
+        if (this.pitchZoomLevel > 1.01 || Math.abs(this.lo - this.lo0) > 0.01) this.setPitch(ds.lo + dm, ds.hi + dm);
+        this.setView(ds.t0 + dt, ds.t1 + dt);
       }
     });
     const end = (e: PointerEvent) => {
@@ -275,6 +334,7 @@ export class PitchChart {
     // Guides and both axes
     ctx.font = '11px system-ui';
     ctx.textBaseline = 'middle';
+    let lastLabelY = -100;
     for (let m = Math.floor(lo); m <= Math.ceil(hi); m++) {
       const pc = pitchClass(m - tonic);
       if (!scale.intervals.includes(pc) || m < lo + 0.6 || m > hi - 0.6) continue;
@@ -284,11 +344,16 @@ export class PitchChart {
       ctx.moveTo(PAD.l, y(m));
       ctx.lineTo(cssW - PAD.r, y(m));
       ctx.stroke();
-      ctx.fillStyle = fg;
-      ctx.textAlign = 'right';
-      ctx.fillText(notation === 'indian' ? SWARA_NAMES[pc] : westernName(m), PAD.l - 4, y(m));
-      ctx.textAlign = 'left';
-      ctx.fillText(notation === 'indian' ? westernName(m) : SWARA_NAMES[pc], cssW - PAD.r + 4, y(m));
+      // labels only where there is room; Sa is always labelled
+      if (pc !== 0 && Math.abs(y(m) - lastLabelY) < 12) continue;
+      if (pc === 0 || Math.abs(y(m) - lastLabelY) >= 12) {
+        lastLabelY = y(m);
+        ctx.fillStyle = fg;
+        ctx.textAlign = 'right';
+        ctx.fillText(notation === 'indian' ? SWARA_NAMES[pc] : westernName(m), PAD.l - 4, y(m));
+        ctx.textAlign = 'left';
+        ctx.fillText(notation === 'indian' ? westernName(m) : SWARA_NAMES[pc], cssW - PAD.r + 4, y(m));
+      }
     }
 
     const span = t1 - t0;
@@ -302,7 +367,7 @@ export class PitchChart {
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(PAD.l - 2, 0, cssW - PAD.l - PAD.r + 4, H - PAD.b + 2);
+    ctx.rect(PAD.l - 2, PAD.t - 8, cssW - PAD.l - PAD.r + 4, H - PAD.b - PAD.t + 10);
     ctx.clip();
 
     // Expected notes: bands with the token written inside
