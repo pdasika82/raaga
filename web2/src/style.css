@@ -389,6 +389,170 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .hold-track2 { width: 100%; max-width: 420px; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .hold-fill2 { height: 100%; width: 0; background: var(--accent); transition: width 0.1s linear; }
 .raga-pick { margin: 2px 0 8px; }
+.pace-explanation { display: flex; align-items: center; gap: 10px; background: var(--card-2); border-radius: 8px; padding: 10px 14px; margin: 4px 0; }
+.pace-icon { font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 8px; color: var(--accent); }
+.pace-text { flex: 1; }
+.pace-text strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.advanced-options { margin-top: 8px; }
+.advanced-options summary { cursor: pointer; color: var(--accent); font-size: 14px; list-style: none; padding: 4px 0; }
+.advanced-options summary::before { content: '+'; margin-right: 6px; }
+.advanced-options[open] summary::before { content: '−'; }
+.advanced-options[open] summary { margin-bottom: 8px; }
+
+/* Onboarding */
+.onboarding-card { max-width: 480px; text-align: center; padding: 32px 24px; }
+.onboarding-icon { font-size: 64px; margin-bottom: 16px; }
+.onboarding-card h2 { margin: 0 0 16px; font-size: 24px; }
+.onboarding-text { font-size: 16px; line-height: 1.6; color: var(--fg-muted); margin: 0 0 24px; }
+.onboarding-text > div { margin-bottom: 8px; }
+.onboarding-text > div:last-child { margin-bottom: 0; }
+.onboarding-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+.onboarding-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--track); }
+.onboarding-dots .dot.active { background: var(--accent); }
+.onboarding-buttons { display: flex; justify-content: center; gap: 12px; }
+.onboarding-buttons .btn { min-width: 100px; }
+
+/* LMS for Arts: the existing Raaga workspace sits inside an arts module shell. */
+.content.lr { max-width: none; padding: 0 0 32px; }
+.arts-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: calc(env(safe-area-inset-top, 0px) + 14px) 28px 14px; background: var(--card); border-bottom: 1px solid var(--border); }
+.arts-brand { display: inline-flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; font-size: 18px; line-height: 1.2; font-weight: 600; font-family: inherit; color: var(--fg); cursor: pointer; white-space: nowrap; }
+.arts-mark { display: grid; place-items: center; width: 35px; height: 35px; background: var(--accent); color: #fff; border-radius: 50% 50% 8px 50%; font: italic 30px Georgia, serif; }
+.arts-nav { display: flex; align-items: center; gap: 6px; }
+.arts-nav-link { padding: 8px 14px; border: 0; background: none; border-radius: 8px; color: var(--fg-muted); font: 500 14px/1.4 system-ui, sans-serif; cursor: pointer; }
+.arts-nav-link.active { color: var(--accent); background: var(--accent-soft); }
+.arts-account { display: flex; align-items: center; gap: 8px; background: none; border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font: 500 13px/1.4 system-ui, sans-serif; color: var(--fg); cursor: pointer; white-space: nowrap; }
+.arts-page { max-width: 1160px; width: 100%; margin: 0 auto; padding: 36px 32px; }
+.arts-intro { padding: 26px 0 36px; max-width: 700px; }
+.arts-intro h1 { font: 500 clamp(38px, 5vw, 64px)/1.1 Georgia, 'Times New Roman', serif; letter-spacing: -.035em; margin: 18px 0; }
+.arts-intro h1 > span { color: var(--accent); }
+.arts-intro > p { max-width: 550px; font-size: 17px; color: var(--fg-muted); line-height: 1.7; }
+.arts-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.arts-section-heading h2 { font-size: 20px; font-weight: 600; margin: 0; }
+.arts-modules { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.art-module { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--card); min-width: 0; }
+.art-visual { height: 156px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.music-visual { background: #eee3ee; }
+.music-visual::before, .music-visual::after { content: ''; position: absolute; width: 500px; height: 150px; border: 1px solid #c9adcb; border-radius: 50%; transform: rotate(-12deg); }
+.music-visual::after { transform: rotate(12deg); }
+.music-notes { z-index: 1; display: flex; align-items: center; gap: 14px; }
+.music-notes > span { font: 24px Georgia, serif; background: #faf6fc; border: 1px solid #dbc5dd; border-radius: 50%; width: 52px; height: 52px; display: grid; place-items: center; color: #704464; transform: translateY(calc((2 - var(--note)) * 8px)); }
+.dance-module { --accent: #95502f; --accent-soft: #f6e9df; }
+.dance-visual { background: #f4e6d7; color: #8b4c31; }
+.dance-rings { display: flex; position: absolute; top: -24px; gap: 12px; transform: rotate(-18deg); }
+.dance-rings > span { display: block; width: 150px; height: 210px; border: 1px solid #c69876; border-radius: 50%; }
+.dance-visual-word { z-index: 1; font: italic 24px Georgia, serif; padding: 10px 18px; background: #f4e6d7e8; }
+.art-module-body { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 26px; }
+.art-module-body h2 { font: 500 34px/1.2 Georgia, serif; margin: 0; }
+.art-module-body p { color: var(--fg-muted); margin: 0; max-width: 340px; min-height: 48px; }
+.art-features { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 8px; }
+.art-features > span, .arts-pill { background: var(--accent-soft); color: var(--accent); border-radius: 20px; padding: 5px 10px; font-size: 12px; }
+.arts-principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; padding: 36px 0 0; margin-top: 36px; border-top: 1px solid var(--border); }
+.arts-principles h3 { font-size: 17px; margin: 12px 0 6px; }
+.arts-principles p { color: var(--fg-muted); font-size: 14px; margin: 0; }
+.dance-page { --accent: #95502f; --accent-soft: #f6e9df; --card-2: #faf5ef; }
+.dance-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 30px; }
+.dance-heading h1 { font: 500 44px/1.2 Georgia, serif; margin: 8px 0; }
+.dance-heading p { margin: 0; }
+.dance-heading .arts-pill { white-space: nowrap; }
+.dance-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); align-items: start; gap: 24px; }
+.dance-sidebar { display: flex; flex-direction: column; gap: 18px; }
+.lesson-list { padding: 14px 8px; gap: 5px; }
+.lesson-list > .eyebrow { padding: 4px 10px 12px; }
+.dance-lesson { display: flex; align-items: center; gap: 12px; padding: 14px 10px; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; border-radius: 10px; color: var(--fg); cursor: pointer; font: inherit; }
+.dance-lesson.selected { border-color: #dfc2ab; background: var(--accent-soft); }
+.dance-lesson > span:last-child { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dance-lesson strong { font-size: 14px; font-weight: 600; }
+.dance-lesson .small { font-size: 11px; }
+.lesson-index { display: grid; place-items: center; flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--card-2); color: var(--accent); font-size: 12px; }
+.lesson-index.practiced { background: var(--in-tune-soft); color: var(--in-tune); }
+.practice-summary { background: #faf5ef; }
+.practice-summary p { margin: 0; }
+.practice-totals { display: flex; gap: 40px; }
+.practice-totals > div { display: flex; flex-direction: column; }
+.practice-totals strong { font: 32px Georgia, serif; }
+.practice-totals span { font-size: 12px; color: var(--fg-muted); }
+.dance-stage { padding: 22px; gap: 22px; }
+.dance-stage > .btn { align-self: flex-end; }
+.dance-phases { display: flex; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.dance-phase { display: flex; align-items: center; justify-content: center; gap: 9px; flex: 1; padding: 9px; background: transparent; border: 0; border-radius: 8px; font: 14px system-ui, sans-serif; cursor: pointer; color: var(--fg-muted); }
+.dance-phase > span { border: 1px solid var(--border); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; }
+.dance-phase.current { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.dance-phase.current > span { color: #fff; background: var(--accent); border-color: var(--accent); }
+.dance-lesson-heading h2 { font: 500 28px/1.2 Georgia, serif; margin: 10px 0; }
+.dance-lesson-heading p, .dance-task p { margin: 8px 0 0; }
+.dance-task { padding: 18px; border-radius: 10px; background: var(--card-2); }
+.dance-task h3 { color: var(--accent); }
+.dance-task p { font-size: 14px; }
+.demo-card { background: #fdfaf7; border-color: #eadccf; }
+.demo-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 22px 14px; gap: 10px; }
+.demo-empty p { max-width: 360px; font-size: 13px; color: var(--fg-muted); margin: 0; }
+.demo-symbol { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; border: 1px solid #d6b69b; color: var(--accent); font-size: 26px; }
+.dance-demo, .camera-video { width: 100%; max-height: 380px; border-radius: 10px; background: #211e23; }
+.camera-video[hidden] { display: none; }
+.camera-video[autoplay] { transform: scaleX(-1); }
+.demo-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.video-file-label { display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+.video-file-input { width: 100%; font: 13px system-ui, sans-serif; color: var(--fg-muted); }
+.video-file-input::file-selector-button { border: 1px solid #d6b69b; border-radius: 7px; padding: 8px 12px; margin-right: 10px; background: #fff; color: var(--accent); cursor: pointer; }
+.demo-card > p, .dance-camera > p { margin: 0; }
+.practice-timer { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8px 0; }
+.practice-clock { font: 54px/1.2 Georgia, serif; font-variant-numeric: tabular-nums; }
+.review-checks { display: flex; flex-direction: column; gap: 14px; }
+.review-check { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
+.review-check input { flex-shrink: 0; margin: 0; }
+.dance-history { margin-top: 24px; }
+.dance-history h2 { font-size: 20px; }
+.journal-list { list-style: none; padding: 0; margin: 0; }
+.journal-list > li { padding: 16px 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+.journal-list p { margin: 8px 0 0; white-space: pre-wrap; font-size: 14px; }
+.course-note { margin-top: 22px; }
+.account-page { max-width: 580px; padding-top: 52px; }
+.account-card { padding: 32px; gap: 18px; }
+.account-card h1 { font: 500 34px/1.2 Georgia, serif; margin: 0; }
+.account-card p { margin: 0; }
+.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.auth-form .field > span { font-size: 13px; font-weight: 600; }
+.auth-divider { text-align: center; font-size: 12px; color: var(--fg-muted); }
+.account-notice:empty { display: none; }
+.account-notice { border-radius: 8px; background: var(--card-2); padding: 12px; font-size: 13px; }
+.account-storage { padding-top: 16px; border-top: 1px solid var(--border); }
+.account-identity { display: flex; align-items: center; gap: 14px; overflow-wrap: anywhere; }
+.account-identity > div { min-width: 0; }
+.account-avatar { width: 44px; height: 44px; background: var(--accent-soft); color: var(--accent); border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-weight: 600; }
+.account-avatar.small { width: 24px; height: 24px; font-size: 12px; }
+.account-continue { text-align: center; }
+.arts-page :is(button, a, input, select, textarea):focus-visible, .arts-header button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.arts-page a.btn { text-decoration: none; }
+@media (max-width: 800px) {
+  .arts-header { padding: 12px 18px; gap: 12px; flex-wrap: wrap; }
+  .arts-brand { font-size: 16px; }
+  .arts-page { padding: 28px 20px; }
+  .dance-grid { grid-template-columns: minmax(0, 1fr); }
+  .lesson-list { display: grid; grid-template-columns: 1fr 1fr; }
+  .lesson-list > .eyebrow { grid-column: 1 / -1; }
+  .practice-summary { display: none; }
+  .dance-heading { align-items: flex-start; flex-direction: column; }
+  .art-module-body { padding: 22px; }
+}
+@media (max-width: 560px) {
+  .arts-nav { order: 3; width: 100%; justify-content: center; }
+  .arts-nav-link { flex: 1; }
+  .arts-intro { padding: 12px 0 24px; }
+  .arts-intro > p { font-size: 15px; }
+  .arts-modules { grid-template-columns: 1fr; gap: 20px; }
+  .art-visual { height: 130px; }
+  .arts-principles { grid-template-columns: 1fr; gap: 24px; padding-top: 28px; margin-top: 28px; }
+  .arts-section-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .dance-stage { padding: 16px; gap: 18px; }
+  .dance-lesson { gap: 8px; padding: 10px 6px; }
+  .dance-lesson strong { font-size: 12px; }
+  .dance-lesson .small { font-size: 10px; }
+  .dance-phase { gap: 6px; font-size: 13px; padding: 8px 5px; }
+  .account-card { padding: 24px; }
+  .arts-header + .topbar { padding: 12px 16px; }
+  .topbar-right { gap: 10px; }
+  .lr-tabs { flex-wrap: wrap; }
+}
 
 /* Free practice */
 .free-card { gap: 14px; }
@@ -411,3 +575,34 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .free-how { padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .chart-controls { gap: 6px; flex-wrap: wrap; }
 .chart-controls .muted.small { margin-left: 6px; }
+
+/* Account access and practice grading */
+.access-gate { max-width: 600px; margin: 40px auto; padding: 32px; align-items: flex-start; }
+.access-gate h1 { font: 500 32px/1.2 Georgia, serif; margin: 0; }
+.nav-lock { font-size: 11px; }
+.practice-grading { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; text-align: left; }
+.practice-grading > div { width: 100%; }
+.practice-grading [hidden] { display: none; }
+.stage > .practice-grading { margin: 20px 0; }
+.grade-result { padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-2); }
+.grade-heading { display: flex; align-items: center; gap: 16px; margin: 12px 0; }
+.grade-letter { font: 54px/1 Georgia, serif; color: var(--accent); min-width: 44px; }
+.grade-result h3, .grade-heading p { margin: 4px 0; }
+.grade-result > p { margin: 12px 0; }
+.grade-scale summary { cursor: pointer; color: var(--fg-muted); }
+.recording-grade-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+.recording-grade-page h1 { font: 500 36px/1.2 Georgia, serif; margin: 8px 0; }
+.recording-grade-page .view { min-width: 0; }
+.grading-preview { width: 100%; max-height: 380px; border-radius: 10px; }
+.recording-name { overflow-wrap: anywhere; }
+.example-search { gap: 12px; }
+.example-search p { margin: 0; }
+.example-search a { text-align: center; text-decoration: none; white-space: normal; }
+.ai-criterion { border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+.ai-criterion h3 { font-size: 15px; }
+.ai-criterion p, .ai-review li { font-size: 14px; }
+@media (max-width: 900px) { .recording-grade-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) {
+  .access-gate { margin: 16px auto; padding: 22px; }
+  .grade-result { padding: 16px; }
+}

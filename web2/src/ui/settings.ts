@@ -1,6 +1,7 @@
 import { NOTATION_TITLES, type Notation } from '@core/pitch';
 import { DEFAULT_MODEL } from '@llm/claude';
 import { BEGINNER_RAGAS } from '../core/practices';
+import { markOnboardingSeen, showOnboarding } from './onboarding';
 import type { App } from './app';
 import { clear, h } from './dom';
 
@@ -12,7 +13,7 @@ export class SettingsView {
     const p = this.app.prefs;
     const keyInput = h('input', { class: 'input', type: 'password', placeholder: 'sk-ant-…', autocomplete: 'off' }) as HTMLInputElement;
     const keyStatus = h('div', { class: 'small' });
-    const show = () => { keyStatus.textContent = p.apiKey ? `✓ Key saved, ending in ${this.app.prefs.apiKey.slice(-4)}` : 'No key saved. Practice guidance needs one.'; keyStatus.className = this.app.prefs.apiKey ? 'small ok' : 'small warn'; };
+    const show = () => { keyStatus.textContent = this.app.prefs.apiKey ? `✓ Key saved, ending in ${this.app.prefs.apiKey.slice(-4)}` : 'No key saved. AI grading and practice guidance need one.'; keyStatus.className = this.app.prefs.apiKey ? 'small ok' : 'small warn'; };
     show();
     const notation = h('select', { class: 'select' });
     for (const n of Object.keys(NOTATION_TITLES) as Notation[]) notation.append(h('option', { value: n, selected: n === p.notation }, NOTATION_TITLES[n]));
@@ -22,6 +23,7 @@ export class SettingsView {
     const a4 = h('input', { class: 'input', type: 'number', min: 415, max: 466, step: 1, value: p.a4 }) as HTMLInputElement;
     a4.addEventListener('change', () => this.app.update({ a4: Number(a4.value) || 440 }));
     clear(this.el).append(
+      h('h1', {}, 'Advanced settings'),
       h('section', { class: 'card' },
         h('h3', {}, 'Anthropic API key'),
         keyInput,
@@ -29,7 +31,7 @@ export class SettingsView {
           h('button', { class: 'btn', onClick: () => { const v = keyInput.value.trim(); if (v) { this.app.update({ apiKey: v }); keyInput.value = ''; show(); } } }, 'Save key'),
           h('button', { class: 'btn btn-secondary', onClick: () => { this.app.update({ apiKey: '' }); show(); } }, 'Remove')),
         keyStatus,
-        h('p', { class: 'muted tiny' }, `Stored only in this browser. Used for practice guidance with the ${DEFAULT_MODEL} model.`)),
+        h('p', { class: 'muted tiny' }, `Stored only in this browser. Used for practice guidance (${DEFAULT_MODEL}) and AI recording reviews. Requests use your Anthropic API credits.`)),
       h('section', { class: 'card' },
         h('h3', {}, 'Practice'),
         h('label', { class: 'field' }, h('span', {}, 'Raga for First steps and Sarali Swaralu'), (() => {
@@ -45,6 +47,9 @@ export class SettingsView {
         h('label', { class: 'field' }, h('span', {}, 'Note names'), notation),
         h('label', { class: 'field' }, h('span', {}, 'A4 reference (Hz)'), a4),
         h('div', { class: 'muted tiny' }, 'Sa and the starting octave are set from the header.')),
+      h('section', { class: 'card' },
+        h('h3', {}, 'Help'),
+        h('button', { class: 'btn btn-secondary', onClick: () => { markOnboardingSeen(); showOnboarding(() => {}); } }, 'Show welcome tour again')),
     );
   }
 }

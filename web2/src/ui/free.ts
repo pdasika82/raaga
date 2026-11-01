@@ -11,6 +11,8 @@ import { PRACTICES, usesBeginnerRaga, type Practice } from '../core/practices';
 import type { App } from './app';
 import { PitchChart } from './chart';
 import { clear, formatTime, h } from './dom';
+import { raagaGrading } from './grading';
+import { exampleSearch } from './examples';
 
 type Phase = 'idle' | 'listening';
 
@@ -100,6 +102,8 @@ export class FreePracticeView {
             this.status),
           this.result ? this.resultView() : null),
         h('aside', { class: 'side' },
+          h('button', { class: 'btn btn-secondary', disabled: this.phase !== 'idle', onClick: () => this.app.openGrader('raaga', this.lesson?.id) }, 'Upload & grade with AI'),
+          exampleSearch(`Carnatic ${this.lesson?.title || scale.name} singing lesson demonstration`),
           h('section', { class: 'card' },
             h('h3', {}, 'How it works'),
             h('ul', { class: 'small muted free-how' },
@@ -222,7 +226,11 @@ export class FreePracticeView {
     blocks.push(this.swaraSummary(report, scale));
     return h('section', { class: 'card free-result' },
       h('div', { class: 'row space' }, h('h3', {}, 'What you sang'), h('span', { class: 'muted small' }, `${formatTime(session.duration)} · ${prefs.saveTakes ? 'saved under Sessions' : 'not saved'}`)),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn btn-secondary btn-sm', onClick: () => { this.result = null; this.render(); } }, 'Discard and retry'),
+        h('button', { class: 'btn btn-secondary btn-sm', onClick: () => { void this.start(); } }, 'Record again')),
       audio, this.chartControls, canvas,
+      raagaGrading(session, prefs.notation),
       h('div', { class: 'muted tiny' }, 'Drag to move around. Pinch sideways for time, up and down for pitch. On a computer, scroll to zoom time and hold Shift while scrolling to zoom pitch. Double-click to reset.'),
       ...blocks,
       hasVoice(report) ? h('details', { class: 'details-row' }, h('summary', {}, h('span', {}, 'Every note heard')), h('p', { class: 'mono small' }, noteSequence(report, scale, prefs.tonic, prefs.notation))) : null);

@@ -6,6 +6,8 @@ import type { App, Route } from './app';
 import { h } from './dom';
 import { showPitchReference } from './reference';
 import { playPhrase, playTone } from './tone';
+import { auth } from '../auth/service';
+import { isSignedIn, protectedPage } from '../auth/access';
 
 /** Top bar: brand, drone toggle, Sa · Start chip, and the section tabs. */
 export function topBar(app: App, route: Route, tradition: string): HTMLElement {
@@ -18,11 +20,14 @@ export function topBar(app: App, route: Route, tradition: string): HTMLElement {
     else { tanpura.volume = app.prefs.droneVolume; tanpura.start(startingMidi(app.prefs.tonic, app.prefs.saOctave), app.prefs.a4); droneBtn.textContent = '♫ Drone on'; droneBtn.classList.add('on'); vol.hidden = false; }
   });
   vol.addEventListener('input', () => { tanpura.volume = Number(vol.value); app.update({ droneVolume: Number(vol.value) }); });
-  const tab = (r: Route, label: string) => h('button', { class: `link${route === r || (route === 'session' && r === 'sessions') ? ' active' : ''}`, onClick: () => app.navigate(r) }, label);
+  const tab = (r: Route, label: string) => {
+    const locked = !!protectedPage(r) && !isSignedIn(auth.state);
+    return h('button', { class: `link${route === r || (route === 'session' && r === 'sessions') ? ' active' : ''}`, title: locked ? `${label} · Sign in required` : label, 'aria-label': locked ? `${label} · Sign in required` : label, onClick: () => app.navigate(r) }, label, locked ? h('span', { class: 'nav-lock', 'aria-hidden': 'true' }, ' 🔒') : null);
+  };
   return h('header', { class: 'topbar' },
     h('span', { class: 'brand' }, h('span', { class: 'logo' }, 'Sa'), h('b', {}, 'Raaga'), h('span', { class: 'divider' }), h('span', { class: 'muted' }, tradition)),
     h('span', { class: 'topbar-right' },
-      h('span', { class: 'lr-tabs' }, tab('practice', 'Practice'), tab('free', 'Free practice'), tab('sessions', 'Sessions'), tab('settings', 'Settings')),
+      h('span', { class: 'lr-tabs' }, tab('practice', 'Practice'), tab('free', 'Free practice'), tab('sessions', 'Recorded sessions'), tab('settings', 'Advanced settings')),
       h('span', { class: 'row' }, droneBtn, vol),
       h('button', { class: 'pitch-chip', onClick: () => showPitchSetup(app) }, h('span', {}, `Sa ${westernPitchClassName(prefs.tonic)}`), h('span', { class: 'dot' }, '·'), h('span', {}, `Start ${westernName(start)}`), h('span', { class: 'dot' }, '⌄')),
       h('button', { class: 'info', title: 'Pitch reference: every note from low to high with its frequency', 'aria-label': 'Pitch reference', onClick: () => showPitchReference(app as never) }, 'ⓘ')));

@@ -7,6 +7,7 @@ import type { PracticeSession } from '@core/session';
 import { describeSemitone, detectedLabel, parseToken, tokenSpoken } from '@core/swara';
 import { askCoach, describeError } from '@llm/claude';
 import { SessionStore } from '@storage/db';
+import { PRACTICES } from '../core/practices';
 import type { App } from './app';
 import { PitchChart, type ChartSelection } from './chart';
 import { clear, formatDate, formatTime, h, pct } from './dom';
@@ -14,6 +15,7 @@ import { showScoreGuide } from './guide';
 import { scoreBadge } from './scorecard';
 import type { Notation } from '@core/pitch';
 import { playTone } from './tone';
+import { raagaGrading } from './grading';
 
 function report(s: PracticeSession): PerformanceReport {
   return analyze(s.samples, scaleById(s.scaleId), s.tonic, s.a4, { totalSeconds: s.duration });
@@ -25,10 +27,15 @@ function badge(session: PracticeSession, notation: Notation): HTMLElement {
 
 export class SessionsView {
   readonly el = h('div', { class: 'view' });
+  private version = 0;
   constructor(private app: App) {}
 
+  leave(): void { this.version++; clear(this.el); }
+
   async refresh(): Promise<void> {
+    const version = ++this.version;
     const sessions = await SessionStore.all();
+    if (version !== this.version) return;
     clear(this.el);
     if (!sessions.length) {
       this.el.append(h('section', { class: 'card empty' }, h('h3', {}, 'No sessions yet'), h('p', { class: 'muted' }, 'Start a practice on the Practice tab and it will show up here.')));
@@ -72,6 +79,15 @@ export class SessionsView {
           h('div', { class: 'muted small' }, `${scaleById(s.scaleId).name} · Sa ${westernPitchClassName(s.tonic)} · ${formatTime(s.duration)}${s.targets ? ` · ${matched}/${s.targets.length} notes` : ''}`),
           h('div', { class: 'muted tiny' }, formatDate(s.date) + (s.feedback ? ' · 💬' : ''))),
         badge(s, this.app.prefs.notation),
+        h('button', { class: 'btn btn-secondary btn-sm', title: 'Practice this lesson again', 'aria-label': `Practice ${s.lessonTitle} again`, onClick: async (e) => {
+          e.stopPropagation();
+          // Find the practice by lesson title or ID
+          const practice = PRACTICES.find((p) => p.id === s.lessonId || p.title === s.lessonTitle);
+          if (practice) {
+            this.app.setPractice(practice.id);
+            this.app.navigate('practice');
+          }
+        } }, 'Practice again'),
         h('button', { class: 'icon-btn', title: 'Delete session', 'aria-label': `Delete ${s.lessonTitle} session`, onClick: async (e) => {
           e.stopPropagation();
           if (!confirm(`Delete this ${s.lessonTitle} session and its recording?`)) return;
@@ -91,11 +107,29 @@ export class SessionDetailView {
   readonly el = h('div', { class: 'view' });
   private audioUrl: string | null = null;
   private raf: number | null = null;
+  private audio: HTMLAudioElement | null = null;
+  private version = 0;
 
   constructor(private app: App) {}
 
+  leave(): void {
+    this.version++;
+    if (this.raf !== null) cancelAnimationFrame(this.raf);
+    this.raf = null;
+    this.audio?.pause();
+    this.audio?.removeAttribute('src');
+    this.audio?.load();
+    this.audio = null;
+    if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
+    this.audioUrl = null;
+    clear(this.el);
+  }
+
   async show(id: string): Promise<void> {
+    this.leave();
+    const version = this.version;
     const session = await SessionStore.get(id);
+    if (version !== this.version) return;
     clear(this.el);
     if (this.raf) cancelAnimationFrame(this.raf);
     if (!session) {
@@ -110,7 +144,9 @@ export class SessionDetailView {
     // Playback
     if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
     const blob = await SessionStore.recording(id);
+    if (version !== this.version) return;
     const audio = h('audio', { controls: true, class: 'audio' });
+    this.audio = audio;
     if (blob) {
       this.audioUrl = URL.createObjectURL(blob);
       audio.src = this.audioUrl;
@@ -223,6 +259,7 @@ export class SessionDetailView {
 
     this.el.append(h('div', { class: 'view' },
       h('button', { class: 'link', onClick: () => this.app.navigate('sessions') }, '‹ Sessions'),
+      raagaGrading(session, notation),
       h('section', { class: 'card' },
         h('div', { class: 'eyebrow' }, session.lessonTitle.toUpperCase()),
         h('h2', {}, "Here's what to practise next"),
@@ -260,12 +297,14 @@ export class SessionDetailView {
       deleteBtn,
     ));
 
-    requestAnimationFrame(() => {
+    this.raf = requestAnimationFrame(() => {
+      if (version !== this.version) return;
       chart = new PitchChart(canvas, { samples: session.samples, scale, tonic: session.tonic, a4: session.a4, notation, events: r.events, targets: session.targets });
       chart.onViewChange(() => (zoomLabel.textContent = `${chart!.zoomLevel.toFixed(chart!.zoomLevel < 10 ? 1 : 0)}×`));
       chart.onSelect(showSelection);
       chart.draw();
       const tick = () => {
+        if (version !== this.version) return;
         if (!audio.paused) {
           chart?.setPlayhead(audio.currentTime);
           if (stopAt != null && audio.currentTime >= stopAt) { audio.pause(); stopAt = null; }

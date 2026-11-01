@@ -1,4 +1,6 @@
 import { AudioCapture } from '@audio/capture';
+import { raagaGrading } from './grading';
+import { exampleSearch } from './examples';
 import { nextStep } from '@core/guidance';
 import { lessonScale } from '@core/lesson';
 import { midiFromHz, westernName, type PitchFrame } from '@core/pitch';
@@ -193,7 +195,9 @@ export class PracticeView {
           h('div', { class: 'eyebrow accent' }, practice.mode),
           h('h1', {}, practice.title),
           h('div', { class: 'muted' }, `${scale.name} · ${practice.subtitle}`)),
-        h('button', { class: 'btn btn-secondary', onClick: () => showPitchSetup(this.app) }, 'Find a comfortable Sa')),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn-secondary', disabled: this.phase !== 'idle', onClick: () => this.app.openGrader('raaga', practice.id) }, 'Upload & grade with AI'),
+          h('button', { class: 'btn btn-secondary', onClick: () => showPitchSetup(this.app) }, 'Find a comfortable Sa'))),
       h('div', { class: 'lr-grid' },
         h('div', { class: 'exercise-col' },
           h('section', { class: 'card main-card' },
@@ -206,6 +210,11 @@ export class PracticeView {
                 ...practice.speeds.map((sp) => h('button', { class: `seg${sp === this.speed ? ' on' : ''}`, disabled: this.phase !== 'idle', onClick: () => this.app.update({ speed: { ...this.app.prefs.speed, [practice.id]: sp } }) }, String(sp)))) : null,
               h('span', { class: 'muted' }, this.freePace ? 'The next swara lights up when yours is heard' : `${scale.tradition === 'Carnatic' ? 'Adi tala · ' : ''}${NOTES_PER_BEAT[this.speed] === 1 ? 'one swara per beat' : `${NOTES_PER_BEAT[this.speed]} swaras per beat`}`),
               h('span', { class: 'spacer' }),
+              (() => {
+                const saveToggle = h('input', { type: 'checkbox', checked: this.app.prefs.saveTakes, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+                saveToggle.addEventListener('change', () => this.app.update({ saveTakes: saveToggle.checked }));
+                return h('label', { class: 'toggle', title: 'Save each take under Sessions for later review' }, saveToggle, h('span', {}, 'Save takes'));
+              })(),
               h('button', { class: 'link', onClick: () => this.startOver() }, 'Start over'))),
           h('details', { class: 'details-row', open: true },
             h('summary', {},
@@ -217,6 +226,7 @@ export class PracticeView {
             glossary ? h('div', { class: 'muted tiny glossary' }, glossary) : null),
           this.status),
         h('aside', { class: 'side' },
+          exampleSearch(`Carnatic ${practice.title} ${scale.name} lesson demonstration`),
           h('section', { class: 'card' },
             h('h3', {}, 'Choose a practice'),
             (() => {
@@ -278,10 +288,16 @@ export class PracticeView {
 
   private turnStage(lengthText: string): HTMLElement {
     const live = this.app.prefs.livePitchGuide;
+    const paceExplanation = this.freePace ? h('div', { class: 'pace-explanation' },
+      h('div', { class: 'pace-icon' }, this.app.prefs.advanceOnPause ? '⏸' : '→'),
+      h('div', { class: 'pace-text' },
+        h('strong', {}, this.app.prefs.advanceOnPause ? 'Pause mode' : 'Flow mode'),
+        h('div', { class: 'muted small' }, this.app.prefs.advanceOnPause ? 'Take a breath between swaras' : 'Sing continuously'))) : null;
     return h('div', { class: 'stage' },
       h('div', { class: 'stage-head' }, h('span', { class: 'eyebrow accent' }, 'YOUR TURN'), h('span', { class: 'muted' }, lengthText)),
       h('h2', {}, this.phase === 'countin' ? 'Ready…' : this.phase === 'recording' ? 'Sing' : 'Sing it back'),
       h('p', { class: 'lead' }, this.freePace ? (this.app.prefs.advanceOnPause ? 'Sing each swara, hold it as long as you like, then pause briefly. The next one lights up after the pause.' : 'Sing each swara and hold it a moment. The next one lights up when yours is heard.') : this.app.prefs.loop ? 'One swara per beat, after a two-beat count-in. The phrase repeats until you stop; your best pass counts.' : 'One swara per beat, after a two-beat count-in.'),
+      paceExplanation,
       this.phase === 'countin' ? this.countEl : null,
       !this.freePace && this.phase === 'recording' ? this.passEl : null,
       this.freePace && this.phase === 'recording' ? this.holdBox : null,
@@ -297,21 +313,23 @@ export class PracticeView {
       this.freePace && this.phase === 'recording' ? h('div', { class: 'muted small', style: 'text-align:center' }, 'Tap a tile you have sung to go back to it.') : null,
       h('div', { class: 'stage-foot' },
         h('button', { class: 'link small', disabled: this.phase !== 'idle', onClick: () => { this.step = 'listen'; this.render(); } }, '‹ Listen again'),
-        h('span', { class: 'row' },
-          (() => {
-            const along = h('input', { type: 'checkbox', checked: this.app.prefs.playAlong, disabled: this.phase !== 'idle' }) as HTMLInputElement;
-            along.addEventListener('change', () => this.app.update({ playAlong: along.checked }));
-            return h('label', { class: 'toggle', title: 'The tone guide plays each swara with you. Use headphones so the microphone hears only your voice.' }, along, h('span', {}, 'Play along 🎧'));
-          })(),
-          this.freePace ? (() => {
-            const pause = h('input', { type: 'checkbox', checked: this.app.prefs.advanceOnPause, disabled: this.phase !== 'idle' }) as HTMLInputElement;
-            pause.addEventListener('change', () => this.app.update({ advanceOnPause: pause.checked }));
-            return h('label', { class: 'toggle', title: 'On: take a short breath between swaras; a long hold counts once. Off: slide straight to the next swara.' }, pause, h('span', {}, 'Pause between swaras'));
-          })() : (() => {
-            const loop = h('input', { type: 'checkbox', checked: this.app.prefs.loop, disabled: this.phase !== 'idle' }) as HTMLInputElement;
-            loop.addEventListener('change', () => this.app.update({ loop: loop.checked }));
-            return h('label', { class: 'toggle' }, loop, h('span', {}, 'Loop until I stop'));
-          })())),
+        h('details', { class: 'advanced-options' },
+          h('summary', {}, h('span', {}, 'More options')),
+          h('div', { class: 'row' },
+            (() => {
+              const along = h('input', { type: 'checkbox', checked: this.app.prefs.playAlong, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+              along.addEventListener('change', () => this.app.update({ playAlong: along.checked }));
+              return h('label', { class: 'toggle', title: 'The tone guide plays each swara with you. Use headphones so the microphone hears only your voice.' }, along, h('span', {}, 'Play along 🎧'));
+            })(),
+            this.freePace ? (() => {
+              const pause = h('input', { type: 'checkbox', checked: this.app.prefs.advanceOnPause, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+              pause.addEventListener('change', () => this.app.update({ advanceOnPause: pause.checked }));
+              return h('label', { class: 'toggle', title: 'On: take a short breath between swaras; a long hold counts once. Off: slide straight to the next swara.' }, pause, h('span', {}, 'Pause between swaras'));
+            })() : (() => {
+              const loop = h('input', { type: 'checkbox', checked: this.app.prefs.loop, disabled: this.phase !== 'idle' }) as HTMLInputElement;
+              loop.addEventListener('change', () => this.app.update({ loop: loop.checked }));
+              return h('label', { class: 'toggle' }, loop, h('span', {}, 'Loop until I stop'));
+            })()))),
       this.app.prefs.playAlong && this.phase === 'idle' ? h('div', { class: 'muted small' }, 'Play along is on: wear headphones, or the microphone will hear the guide instead of you.') : null);
   }
 
@@ -330,6 +348,7 @@ export class PracticeView {
         h('button', { class: 'btn', onClick: () => this.replay() }, '▶ Replay'),
         h('button', { class: 'btn btn-secondary', onClick: () => { this.step = 'turn'; this.render(); } }, 'Try again'),
         h('button', { class: 'btn btn-secondary', onClick: () => { this.step = 'listen'; this.render(); } }, 'Listen again')),
+      this.lastSession ? raagaGrading(this.lastSession, this.app.prefs.notation) : null,
       h('div', { class: 'stage-foot' },
         h('span', { class: 'muted small' }, 'Green matched, amber slightly off, red a different note, grey not heard.'),
         h('span', { class: 'row' },

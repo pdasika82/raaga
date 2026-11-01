@@ -10,14 +10,19 @@ export default defineConfig({
     alias: { '@core': shared('core'), '@audio': shared('audio'), '@storage': shared('storage'), '@llm': shared('llm') },
   },
   server: { fs: { allow: ['..'] } },
+  build: {
+    rollupOptions: {
+      output: { manualChunks: { firebase: ['firebase/app', 'firebase/auth'] } },
+    },
+  },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'worklet.js'],
       manifest: {
-        name: 'Raaga',
-        short_name: 'Raaga',
-        description: 'Carnatic swara practice: listen to a phrase, sing it back, compare.',
+        name: 'LMS for Arts',
+        short_name: 'Arts',
+        description: 'Raaga singing practice and Kuchipudi dance practice in one place.',
         theme_color: '#7b3f6e',
         background_color: '#faf9fb',
         display: 'standalone',
