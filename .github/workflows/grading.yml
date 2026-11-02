@@ -1,0 +1,44 @@
+name: Saved practice checks
+on:
+  pull_request:
+    paths: ['server/**', 'shared/**', 'demo/**', 'compose.demo.yml', 'web2/**', 'web/src/core/**', '.github/workflows/grading.yml']
+  push:
+    branches: [main, 'codex/**']
+    paths: ['server/**', 'shared/**', 'demo/**', 'compose.demo.yml', 'web2/**', 'web/src/core/**', '.github/workflows/grading.yml']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FEEDBACK_MODE: rules
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            web2/package-lock.json
+      - run: npm ci --prefix server
+      - run: npm run build --prefix server && npm test --prefix server
+      - run: npm ci --prefix web2 && npm test --prefix web2 && npm run build --prefix web2
+      - run: npm run fixtures --prefix server
+      - name: Start isolated demo services
+        run: docker compose -f compose.demo.yml up -d --build
+      - name: Check real persistence, queue and captured messages
+        run: npm run demo:check --prefix server -- --run-id ci-baseline
+      - name: Retry completed jobs and check for duplicate mail
+        run: |
+          DEMO_MODE=true FIREBASE_PROJECT_ID=demo-raaga npm run demo:retry --prefix server -- ci-baseline
+          npm run demo:check --prefix server -- --inspect-only --run-id ci-baseline
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: saved-practice-evidence
+          path: server/demo-evidence/
+      - name: Stop local services
+        if: always()
+        run: docker compose -f compose.demo.yml down -v

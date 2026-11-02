@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/dist
+**/dev-dist
+**/.env
+**/.env.*
+**/data
+**/demo-evidence
+**/coverage
+Raaga
+Packages
+.DS_Store

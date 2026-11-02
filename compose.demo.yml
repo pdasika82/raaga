@@ -1,0 +1,123 @@
+name: raaga-demo
+
+x-server: &server
+  build:
+    context: .
+    dockerfile: server/Dockerfile
+  init: true
+  volumes:
+    - uploads:/app/uploads
+  environment: &server-env
+    DATABASE_URL: postgres://raaga:raaga-local-only@postgres:5432/raaga
+    REDIS_URL: redis://redis:6379
+    FIREBASE_PROJECT_ID: demo-raaga
+    FIREBASE_AUTH_EMULATOR_HOST: auth:9099
+    DEMO_MODE: 'true'
+    FEEDBACK_MODE: ${FEEDBACK_MODE:-live}
+    SMTP_HOST: mailpit
+    SMTP_PORT: '1025'
+    MAILPIT_URL: http://mailpit:8025
+    UPLOAD_DIR: /app/uploads
+    CORS_ORIGINS: http://127.0.0.1:5175,http://localhost:5175
+    HOST: 0.0.0.0
+    PORT: '8787'
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    auth:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: raaga
+      POSTGRES_PASSWORD: raaga-local-only
+      POSTGRES_DB: raaga
+    ports: ['127.0.0.1:55432:5432']
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./demo/postgres-init.sql:/docker-entrypoint-initdb.d/readonly.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U raaga -d raaga']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    volumes:
+      - redis:/data
+      - ./demo/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports: ['127.0.0.1:56379:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ['127.0.0.1:58025:8025', '127.0.0.1:51025:1025']
+    environment:
+      MP_MAX_MESSAGES: '1000'
+    # No relay configuration: all mail remains inside the local capture inbox.
+  auth:
+    build:
+      context: .
+      dockerfile: demo/auth.Dockerfile
+    ports: ['127.0.0.1:9099:9099']
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:9099/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+  setup:
+    <<: *server
+    command: ['sh', '-c', 'npm run migrate && npm run seed']
+  api:
+    <<: *server
+    ports: ['127.0.0.1:8787:8787']
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:8787/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  worker:
+    <<: *server
+    command: ['npm', 'run', 'worker']
+    environment:
+      <<: *server-env
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
+      DEMO_NOTIFICATION_FAULT: ${DEMO_NOTIFICATION_FAULT:-none}
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+  web:
+    build:
+      context: .
+      dockerfile: demo/web.Dockerfile
+    ports: ['127.0.0.1:5175:5175']
+    environment:
+      VITE_GRADING_API_URL: http://127.0.0.1:8787
+      VITE_FIREBASE_API_KEY: demo-key
+      VITE_FIREBASE_AUTH_DOMAIN: demo-raaga.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: demo-raaga
+      VITE_FIREBASE_APP_ID: demo-raaga-web
+      VITE_FIREBASE_AUTH_EMULATOR_URL: http://127.0.0.1:9099
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  database:
+  redis:
+  uploads:

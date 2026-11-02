@@ -1,0 +1,21 @@
+{
+  "description": "Independent expected outcomes for the Raaga demo; do not derive recipients from the worker's delivery ledger.",
+  "exerciseId": "first_notes",
+  "fixtures": {
+    "good": "web2/public/demo/good.wav",
+    "offKey": "web2/public/demo/off-key.wav",
+    "type": "synthetic harmonic tones, not human singing"
+  },
+  "scores": { "goodMinimum": 90, "offKeyMaximum": 35, "minimumGap": 50 },
+  "notificationDeadlineSeconds": 60,
+  "student": { "id": "demo-maya", "name": "Maya Rao", "email": "maya@example.test" },
+  "expectedRecipientsPerAttempt": [
+    { "name": "Maya Rao", "email": "maya@example.test" },
+    { "name": "Arun Rao", "email": "arun@example.test" }
+  ],
+  "excludedRecipients": [
+    { "name": "Asha Rao", "email": "asha@example.test", "reason": "linked parent opted out" },
+    { "name": "Noor Shah", "email": "noor@example.test", "reason": "unrelated student" },
+    { "name": "Leela Shah", "email": "leela@example.test", "reason": "unrelated parent" }
+  ]
+}

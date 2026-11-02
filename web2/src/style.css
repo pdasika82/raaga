@@ -606,3 +606,9 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
   .access-gate { margin: 16px auto; padding: 22px; }
   .grade-result { padding: 16px; }
 }
+.saved-assignment { padding: 14px 16px; border-radius: 12px; background: var(--surface, #f6f2f7); margin: 12px 0; }
+.saved-assignment p { margin: 6px 0; }
+.saved-metrics { gap: 18px; margin: 18px 0; flex-wrap: wrap; }
+.saved-attempt-link { text-align: left; display: flex; flex-direction: column; gap: 5px; padding: 12px; border: 1px solid #e7deea; border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.saved-attempt-link:hover, .saved-attempt-link:focus-visible { background: #f6f2f7; border-color: #7b3f6e; }
+.saved-attempt-history .col { max-height: 440px; overflow-y: auto; gap: 9px; }

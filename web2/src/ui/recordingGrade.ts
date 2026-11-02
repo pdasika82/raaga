@@ -12,6 +12,8 @@ import { practiceById, PRACTICES, usesBeginnerRaga } from '../core/practices';
 import { DANCE_LESSONS, danceLesson } from '../modules/kuchipudi/lessons';
 import { gradeResult } from './grading';
 import { exampleSearch } from './examples';
+import { savedGradingEnabled } from '../core/attemptsApi';
+import { SavedGradeView } from './savedGrade';
 import { formatTime, h } from './dom';
 import type { App } from './app';
 
@@ -27,16 +29,23 @@ export class RecordingGradeView {
   private report: AIGrade | null = null;
   private status = '';
   private statusEl = h('p', { class: 'small', role: 'status', 'aria-live': 'polite' });
+  private saved: SavedGradeView;
 
-  constructor(private app: App) {}
+  constructor(private app: App) { this.saved = new SavedGradeView(app); }
 
   show(art: Art, lessonId?: string): void {
+    if (art === 'raaga' && savedGradingEnabled) {
+      this.saved.show(lessonId || this.app.prefs.practiceId);
+      this.el.replaceChildren(this.saved.el);
+      return;
+    }
     this.art = art;
     this.lessonId = art === 'raaga' ? practiceById(lessonId || this.app.prefs.practiceId).id : danceLesson(lessonId || 'first-step').id;
     this.refresh();
   }
 
   leave(): void {
+    this.saved.leave();
     this.controller?.abort(); this.controller = null;
     this.player?.pause(); this.player?.removeAttribute('src'); this.player?.load(); this.player = null;
     if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);

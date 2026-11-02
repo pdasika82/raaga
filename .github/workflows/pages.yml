@@ -32,7 +32,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - name: Build Raaga (web2) at the site root
-        run: npm ci && npm run build
+        run: npm ci && npm test && npm run build
         working-directory: web2
         env:
           BASE_PATH: /raaga/
@@ -40,6 +40,7 @@ jobs:
           VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
           VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+          VITE_GRADING_API_URL: ${{ vars.VITE_GRADING_API_URL }}
       - name: Assemble the site
         run: |
           rm -rf ../_site && mkdir -p ../_site

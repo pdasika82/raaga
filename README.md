@@ -24,6 +24,10 @@ feedback on that lesson.
 
 ## What's here
 
+- `server/` + `compose.demo.yml`: saved Raaga reviews with Firebase identity,
+  deterministic scoring, AI coaching, PostgreSQL, BullMQ and Mailpit. See
+  [the local demo setup](server/README.md) and [Testfold runbook](demo/TESTFOLD.md).
+
 - `web2/`: **Raaga**, the app. A Progressive Web App: listen to a phrase at a chosen
   speed, sing it back at your own pace or to a beat, compare note by note, with a
   tanpura drone, a guided Sa finder, all 14 Sarali Swaralu in three speeds, and
