@@ -19,7 +19,7 @@ export const config = {
   uploadDir: resolve(env.UPLOAD_DIR || './data/uploads'),
   port: Number(env.PORT || 8787), host: env.HOST || '127.0.0.1',
   corsOrigins: (env.CORS_ORIGINS || 'http://127.0.0.1:5175,http://localhost:5175').split(','),
-  anthropicKey: env.ANTHROPIC_API_KEY || '', model: env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
+  openaiKey: env.OPENAI_API_KEY || '', model: env.OPENAI_MODEL || 'gpt-5.4-mini',
   deepgramKey: env.DEEPGRAM_API_KEY || '',
   smtpHost: env.SMTP_HOST || '127.0.0.1', smtpPort: Number(env.SMTP_PORT || 51025),
   mailFrom: env.MAIL_FROM || 'Raaga <practice@raaga.example.test>',

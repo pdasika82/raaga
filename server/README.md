@@ -1,7 +1,7 @@
 # Saved Raaga practice demo
 
 This adds a real backend to LMS for Arts: Firebase identity, uploaded audio,
-deterministic pitch/timing scores, server-side Anthropic feedback, saved next
+deterministic pitch/timing scores, server-side OpenAI feedback, saved next
 exercises, a transactional outbox, BullMQ and per-recipient Mailpit delivery.
 The current saved rubric supports **First notes** and **Find Sa** at C4. Kuchipudi
 and the original device-local reviews continue to work as before when the backend
@@ -15,7 +15,7 @@ From the repository root:
 npm ci --prefix server
 npm run fixtures --prefix server
 cp server/.env.example server/.env
-# Set ANTHROPIC_API_KEY in server/.env, or export it in your shell.
+# Set OPENAI_API_KEY in server/.env, or export it in your shell.
 docker compose --env-file server/.env -f compose.demo.yml up -d --build
 ```
 
@@ -62,9 +62,13 @@ within 50 cents; timing is the fraction of detected note starts within 150 ms.
 The overall score is 80% pitch + 20% timing. Missing pitch windows count against
 the score; less than 45% usable voiced coverage produces `needs_review`.
 
+OpenAI's Responses API uses `gpt-5.4-mini` by default (configurable with
+`OPENAI_MODEL`), strict Structured Outputs and `store: false`.
 The model cannot set scores or recipients. It explains measurements and selects
 one existing next exercise; unknown exercise IDs or extra JSON fields fail
-validation. The raw audio is not sent to Anthropic.
+validation. The raw audio is not sent to OpenAI. Provider guidance:
+[Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)
+and [GPT-5.4 Mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini).
 
 Deepgram is an optional adapter for a future catalog exercise with
 `expectedLyrics`. It stores word timestamps/confidence and a word-error-derived

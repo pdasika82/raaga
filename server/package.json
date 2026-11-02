@@ -19,7 +19,6 @@
     "demo:retry": "node --import tsx scripts/retry-notifications.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.68.0",
     "@fastify/cors": "^11.1.0",
     "@fastify/multipart": "^9.2.1",
     "@fastify/rate-limit": "^10.3.0",
@@ -28,6 +27,7 @@
     "firebase-admin": "^13.5.0",
     "ioredis": "^5.11.1",
     "nodemailer": "^7.0.9",
+    "openai": "^7.47.0",
     "pg": "^8.16.3",
     "tsx": "^4.20.6",
     "zod": "^4.1.12"

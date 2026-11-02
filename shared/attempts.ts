@@ -21,7 +21,7 @@ export interface Measurements {
 export interface PracticeFeedback {
   summary: string; feedback: string[];
   practiceNext: { exerciseId: string; reason: string };
-  source: 'anthropic' | 'rules'; model: string;
+  source: 'openai' | 'anthropic' | 'rules'; model: string;
 }
 export interface SavedAttempt {
   id: string; studentId: string; exerciseId: string; exerciseTitle: string;
