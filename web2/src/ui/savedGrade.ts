@@ -140,7 +140,11 @@ export class SavedGradeView {
       report.append(h('div', { class: 'row saved-metrics' }, h('strong', {}, `Pitch ${a.measurements.pitchAccuracy}%`), h('strong', {}, `Timing ${a.measurements.timingAccuracy}%`), h('span', { class: 'small muted' }, 'Lyrics: not assessed')));
       report.append(h('ul', {}, ...a.feedback.feedback.map(text => h('li', {}, text))));
       report.append(h('div', { class: 'saved-assignment' }, h('h3', {}, 'Your next practice'), h('p', {}, a.feedback.practiceNext.reason),
-        h('button', { class: 'btn btn-secondary', onClick: () => { this.app.update({ tonic: 0, saOctave: 4, a4: 440 }); this.app.setPractice(a.feedback!.practiceNext.exerciseId); this.app.navigate('practice'); } }, 'Practice this exercise')));
+        h('button', { class: 'btn btn-secondary', onClick: () => {
+          const nextId = a.feedback!.practiceNext.exerciseId;
+          this.app.update({ tonic: 0, saOctave: 4, a4: 440, beginnerRaga: 'shankarabharanam', bpm: { ...this.app.prefs.bpm, [nextId]: 60 }, speed: { ...this.app.prefs.speed, [nextId]: 1 } });
+          this.app.setPractice(nextId); this.app.navigate('practice');
+        } }, 'Practice this exercise')));
       report.append(h('h3', {}, 'Score email'), h('p', { role: 'status' }, a.notification === 'complete' ? 'Sent to your authorized recipients.' : a.notification === 'attention' ? 'A delivery needs attention. Your saved review is available here.' : 'Delivery is pending. Your saved review is available here.'),
         h('ul', { class: 'small' }, ...a.deliveries.map(d => h('li', {}, `${d.name} (${d.role}): ${d.status === 'sent' ? 'sent' : d.status === 'uncertain' ? 'needs attention' : 'pending'}`))),
         h('p', { class: 'tiny muted' }, a.feedback.source === 'anthropic' ? `AI feedback · ${a.feedback.model}` : 'Rules-based feedback · no AI model called'));

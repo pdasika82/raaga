@@ -1,7 +1,7 @@
-import type { Job } from 'bullmq';
+import { UnrecoverableError, type Job } from 'bullmq';
 import { analyzeRecording, RecordingError } from './audio.ts';
 import { pool, transaction, withAttemptLock } from './db.ts';
-import { transcribe, writeFeedback } from './feedback.ts';
+import { CoachingUnavailableError, transcribe, writeFeedback } from './feedback.ts';
 import type { Exercise, Measurements } from '../../shared/attempts.ts';
 
 export async function gradeAttempt(job: Pick<Job, 'data'>) {
@@ -24,7 +24,10 @@ export async function gradeAttempt(job: Pick<Job, 'data'>) {
       await client.query("UPDATE attempts SET status='needs_review', error=$2 WHERE id=$1", [id, error.message]);
       return;
     }
-    const feedback = await writeFeedback(exercise, measurements, attempt.teacher_note);
+    const feedback = await writeFeedback(exercise, measurements, attempt.teacher_note).catch(error => {
+      if (error instanceof CoachingUnavailableError) throw new UnrecoverableError(error.message);
+      throw error;
+    });
     await transaction(async tx => {
       await tx.query("UPDATE attempts SET status='graded', score=$2, measurements=$3, feedback=$4, error=NULL, graded_at=now() WHERE id=$1", [id, measurements.score, JSON.stringify(measurements), JSON.stringify(feedback)]);
       await tx.query('INSERT INTO practice_assignments(attempt_id, student_id, exercise_id, reason) VALUES($1,$2,$3,$4) ON CONFLICT (attempt_id) DO NOTHING', [id, attempt.student_id, feedback.practiceNext.exerciseId, feedback.practiceNext.reason]);

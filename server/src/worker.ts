@@ -1,4 +1,4 @@
-import { Worker } from 'bullmq';
+import { UnrecoverableError, Worker } from 'bullmq';
 import { config, redisConnection } from './config.ts';
 import { pool } from './db.ts';
 import { gradeAttempt, markGradeFailed } from './grading.ts';
@@ -9,7 +9,7 @@ const gradeWorker = new Worker('raaga-grading', gradeAttempt, { connection: redi
 const notificationWorker = new Worker('raaga-notifications', job => sendNotifications(job.data.attempt_id), { connection: redisConnection(), concurrency: 2 });
 gradeWorker.on('failed', (job, error) => {
   console.error(JSON.stringify({ event: 'grade_failed', attempt_id: job?.data.attempt_id, error: error.message, attempts: job?.attemptsMade }));
-  if (job && job.attemptsMade >= (job.opts.attempts || 1)) void markGradeFailed(job.data.attempt_id).catch(() => console.error('Could not persist failed grade status.'));
+  if (job && (error instanceof UnrecoverableError || job.attemptsMade >= (job.opts.attempts || 1))) void markGradeFailed(job.data.attempt_id).catch(() => console.error('Could not persist failed grade status.'));
 });
 notificationWorker.on('failed', job => console.error(JSON.stringify({ event: 'notification_failed', attempt_id: job?.data.attempt_id })));
 for (const worker of [gradeWorker, notificationWorker]) worker.on('error', error => console.error('Worker connection error:', error.message));
