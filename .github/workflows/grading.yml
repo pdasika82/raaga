@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 15
     env:
       FEEDBACK_MODE: rules
+      DEMO_MODE: 'true'
+      FIREBASE_PROJECT_ID: demo-raaga
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

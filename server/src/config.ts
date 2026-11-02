@@ -15,7 +15,7 @@ export const config = {
   demo, feedbackMode: feedbackMode as 'live' | 'rules', fault: fault as 'none' | 'skip-parent',
   databaseUrl: env.DATABASE_URL || 'postgres://raaga:raaga-local-only@127.0.0.1:55432/raaga',
   redisUrl: env.REDIS_URL || 'redis://127.0.0.1:56379',
-  projectId: env.FIREBASE_PROJECT_ID || 'certain-ellipse-316421',
+  projectId: env.FIREBASE_PROJECT_ID || (demo ? 'demo-raaga' : 'certain-ellipse-316421'),
   uploadDir: resolve(env.UPLOAD_DIR || './data/uploads'),
   port: Number(env.PORT || 8787), host: env.HOST || '127.0.0.1',
   corsOrigins: (env.CORS_ORIGINS || 'http://127.0.0.1:5175,http://localhost:5175').split(','),
