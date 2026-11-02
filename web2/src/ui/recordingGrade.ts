@@ -114,7 +114,7 @@ export class RecordingGradeView {
     const progress = (message: string) => { if (this.controller === controller) { this.status = message; this.statusEl.textContent = message; } };
     try {
       const music = practiceById(this.lessonId), dance = danceLesson(this.lessonId);
-      const context: GradeContext = { art: this.art, lesson: this.art === 'raaga' ? music.title : dance.title, instructions: this.art === 'raaga' ? music.instructions : dance.task, teacherNote: this.teacherNote, duration: 0 };
+      const context: GradeContext = { art: this.art, lesson: this.art === 'raaga' ? music.title : dance.title, instructions: this.art === 'raaga' ? music.instructions : dance.task, teacherNote: this.teacherNote, duration: 0, recording: this.file.name };
       let measurements: unknown = null;
       let frames: Awaited<ReturnType<typeof videoEvidence>>['frames'] = [];
       if (this.art === 'raaga') {

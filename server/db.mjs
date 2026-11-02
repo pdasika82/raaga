@@ -7,6 +7,7 @@ export async function migrate() {
     id serial PRIMARY KEY,
     user_email text NOT NULL,
     lesson text NOT NULL,
+    recording text,
     status text NOT NULL CHECK (status IN ('grading', 'graded', 'failed', 'emailed')),
     grade text,
     score integer,

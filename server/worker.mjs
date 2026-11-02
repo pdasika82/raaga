@@ -12,7 +12,7 @@ new Worker(QUEUE, async job => {
     : 'Your Raaga review could not be completed';
   await mail.sendMail({
     from: 'Raaga <reviews@raaga.local>', to: review.user_email, subject,
-    text: `${review.lesson}\n\n${review.summary ?? ''}\n\nOpen Raaga to see the full review.`,
+    text: `${review.lesson} · ${review.recording ?? 'your recording'}\n\n${review.summary ?? ''}\n\nOpen Raaga to see the full review.`,
   });
   await db.query(`UPDATE reviews SET status = 'emailed', updated_at = now() WHERE id = $1 AND status = 'graded'`, [review.id]);
   return { emailed: review.user_email, subject };

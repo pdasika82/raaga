@@ -15,8 +15,8 @@ function userEmail(req) {
   try { return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).email || null; } catch { return null; }
 }
 
-function lessonOf(body) {
-  try { return JSON.parse(body.messages[0].content[0].text).context.lesson || 'unknown'; } catch { return 'unknown'; }
+function contextOf(body) {
+  try { return JSON.parse(body.messages[0].content[0].text).context || {}; } catch { return {}; }
 }
 
 /** Average of the rubric scores the model returned, or null when any criterion was not assessed. */
@@ -38,7 +38,8 @@ http.createServer(async (req, res) => {
   const email = userEmail(req);
   if (!email) { res.writeHead(401, { ...cors, 'content-type': 'application/json' }); return res.end('{"type":"error","error":{"type":"authentication_error","message":"sign in first"}}'); }
   const body = JSON.parse(await new Promise(r => { let s = ''; req.on('data', c => s += c); req.on('end', () => r(s)); }));
-  const { rows: [review] } = await db.query(`INSERT INTO reviews (user_email, lesson, status) VALUES ($1, $2, 'grading') RETURNING id`, [email, lessonOf(body)]);
+  const context = contextOf(body);
+  const { rows: [review] } = await db.query(`INSERT INTO reviews (user_email, lesson, recording, status) VALUES ($1, $2, $3, 'grading') RETURNING id`, [email, context.lesson || 'unknown', context.recording || null]);
   let status = 502, reply = { type: 'error', error: { type: 'api_error', message: 'grading is not configured on this server' } };
   if (process.env.ANTHROPIC_API_KEY) {
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {

@@ -3,7 +3,7 @@ import type { VideoFrame } from './recording';
 
 export const GRADING_MODEL = 'claude-sonnet-5-5';
 export type Art = 'raaga' | 'kuchipudi';
-export interface GradeContext { art: Art; lesson: string; instructions: string; teacherNote: string; duration: number }
+export interface GradeContext { art: Art; lesson: string; instructions: string; teacherNote: string; duration: number; recording?: string }
 export interface CriterionGrade { name: string; score: number | null; evidence: string; timestamps: number[] }
 export interface AIGrade { summary: string; criteria: CriterionGrade[]; strengths: string[]; improvements: string[]; limitations: string[]; model: string }
 export const RUBRICS: Record<Art, string[]> = {
