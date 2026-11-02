@@ -42,7 +42,30 @@ export async function extractPitch(buffer: AudioBuffer, signal: AbortSignal, pro
   return samples;
 }
 
-export async function audioEvidence(file: File, signal: AbortSignal, progress: (text: string) => void): Promise<{ samples: PitchSample[]; duration: number }> {
+/** Power of one frequency in a window (Goertzel). */
+function power(data: Float32Array, start: number, length: number, hz: number, rate: number): number {
+  const k = 2 * Math.cos((2 * Math.PI * hz) / rate);
+  let s1 = 0, s2 = 0;
+  for (let i = start; i < start + length; i++) { const s = data[i] + k * s1 - s2; s2 = s1; s1 = s; }
+  return s1 * s1 + s2 * s2 - k * s1 * s2;
+}
+
+/** Share of a note's energy in its overtones (2nd–4th harmonic), averaged over up to 24 pitched moments.
+ *  A voice is rich in overtones; a pure generated tone has none. */
+export function overtoneShare(buffer: AudioBuffer, samples: PitchSample[]): number {
+  const data = buffer.getChannelData(0), rate = buffer.sampleRate, length = 2048;
+  const voiced = samples.filter(s => s.hz > 0 && s.t * rate + length < data.length);
+  const picked = voiced.filter((_, i) => i % Math.max(1, Math.floor(voiced.length / 24)) === 0).slice(0, 24);
+  if (!picked.length) return 0;
+  const shares = picked.map(s => {
+    const start = Math.floor(s.t * rate), [f1, ...overtones] = [1, 2, 3, 4].map(n => power(data, start, length, s.hz * n, rate));
+    const rest = overtones.reduce((a, b) => a + b, 0);
+    return rest / (f1 + rest || 1);
+  });
+  return shares.reduce((a, b) => a + b, 0) / shares.length;
+}
+
+export async function audioEvidence(file: File, signal: AbortSignal, progress: (text: string) => void): Promise<{ samples: PitchSample[]; duration: number; overtones: number }> {
   // Check duration before decoding a highly compressed file into a large PCM buffer.
   const metadata = document.createElement(file.type.startsWith('video/') ? 'video' : 'audio');
   const url = URL.createObjectURL(file);
@@ -55,7 +78,8 @@ export async function audioEvidence(file: File, signal: AbortSignal, progress: (
   try {
     const buffer = await context.decodeAudioData(await file.arrayBuffer());
     signal.throwIfAborted();
-    return { samples: await extractPitch(buffer, signal, progress), duration: buffer.duration };
+    const samples = await extractPitch(buffer, signal, progress);
+    return { samples, duration: buffer.duration, overtones: overtoneShare(buffer, samples) };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'EncodingError') throw new Error('This browser cannot read the recording’s audio. Try a WAV, MP3, or M4A audio file.');
     throw error;

@@ -17,6 +17,8 @@ import type { App } from './app';
 
 /** Set for a deployment with a Raaga grading service; otherwise grading calls Claude with the learner's key. */
 const GRADING_SERVICE = (import.meta.env.VITE_RAAGA_API as string | undefined)?.trim() || '';
+/** Least overtone share a sung note shows; a pure generated tone measures ~0. */
+const MIN_OVERTONE_SHARE = 0.05;
 
 export class RecordingGradeView {
   readonly el = h('div', { class: 'arts-page recording-grade-page' });
@@ -121,7 +123,8 @@ export class RecordingGradeView {
         const evidence = await audioEvidence(this.file, controller.signal, progress);
         context.duration = evidence.duration;
         const report = analyze(evidence.samples, this.scale, this.app.prefs.tonic, this.app.prefs.a4, { totalSeconds: evidence.duration });
-        if (!hasVoice(report)) throw new Error('No clear singing was detected. Try a louder solo voice recording; no AI request was sent.');
+        // A voice carries overtones; a generated tone has a steady pitch and none (it passed as singing).
+        if (!hasVoice(report) || evidence.overtones < MIN_OVERTONE_SHARE) throw new Error('No clear singing was detected. Try a louder solo voice recording; no AI request was sent.');
         const start = startingMidi(this.app.prefs.tonic, this.app.prefs.saOctave);
         const targets = parseSequence(music.sequence || '').map(token => ({ token: token.raw, midi: tokenMidi(token, this.scale, start) ?? start }));
         const comparison = targets.length ? compareFree(report.events.map(event => ({ midi: event.midi + event.meanCents / 100, at: event.start })), targets) : null;
