@@ -4,16 +4,18 @@ import { YinPitchDetector, midiFromHz } from '../../web/src/core/pitch.ts';
 import type { Exercise, Measurements, NoteMeasurement } from '../../shared/attempts.ts';
 
 const exec = promisify(execFile);
+// Uploaded media must not resolve remote playlists or arbitrary nested resources.
+const inputLimits = ['-protocol_whitelist', 'file,pipe', '-format_whitelist', 'wav,mp3,mov,matroska,webm,ogg,flac,aac'];
 export class RecordingError extends Error {}
 export interface PitchFrame { t: number; midi: number | null; clarity: number }
 const RATE = 12000, WINDOW = 1024, HOP = 240;
 
 export async function decodeRecording(path: string): Promise<{ pcm: Float32Array; duration: number }> {
   try {
-    const probe = await exec('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', path], { timeout: 15000, maxBuffer: 1024 * 1024 });
+    const probe = await exec('ffprobe', ['-v', 'error', ...inputLimits, '-show_entries', 'format=duration', '-of', 'json', path], { timeout: 15000, maxBuffer: 1024 * 1024 });
     const duration = Number(JSON.parse(probe.stdout).format?.duration);
     if (!Number.isFinite(duration) || duration < 1 || duration > 120) throw new RecordingError('Use a recording between 1 second and 2 minutes.');
-    const { stdout } = await exec('ffmpeg', ['-nostdin', '-v', 'error', '-i', path, '-t', '120', '-vn', '-ac', '1', '-ar', String(RATE), '-f', 'f32le', 'pipe:1'],
+    const { stdout } = await exec('ffmpeg', ['-nostdin', '-v', 'error', ...inputLimits, '-i', path, '-t', '120', '-vn', '-ac', '1', '-ar', String(RATE), '-f', 'f32le', 'pipe:1'],
       { timeout: 30000, maxBuffer: RATE * 121 * 4, encoding: 'buffer' });
     const pcm = new Float32Array(stdout.length / 4);
     for (let i = 0; i < pcm.length; i++) pcm[i] = stdout.readFloatLE(i * 4);
