@@ -1,6 +1,6 @@
 // Grade through OpenAI when the server has no Anthropic key: Raaga's Anthropic Messages request in,
 // an Anthropic-shaped reply out, so the browser's prompt and parsing stay exactly as shipped.
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.1';
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4.1';
 
 function part(block) {
   if (block.type === 'image') return { type: 'image_url', image_url: { url: `data:${block.source.media_type};base64,${block.source.data}` } };
