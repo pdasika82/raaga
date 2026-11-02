@@ -15,6 +15,9 @@ import { exampleSearch } from './examples';
 import { formatTime, h } from './dom';
 import type { App } from './app';
 
+/** Set for a deployment with a Raaga grading service; otherwise grading calls Claude with the learner's key. */
+const GRADING_SERVICE = (import.meta.env.VITE_RAAGA_API as string | undefined)?.trim() || '';
+
 export class RecordingGradeView {
   readonly el = h('div', { class: 'arts-page recording-grade-page' });
   private art: Art = 'raaga';
@@ -79,7 +82,7 @@ export class RecordingGradeView {
     tonic.addEventListener('change', () => { this.app.update({ tonic: Number(tonic.value) }); this.report = null; this.refresh(); });
     const octave = h('select', { class: 'select', 'aria-label': 'Recording starting octave', disabled: busy }, ...[2, 3, 4, 5].map(value => h('option', { value, selected: value === this.app.prefs.saOctave }, String(value))));
     octave.addEventListener('change', () => { this.app.update({ saOctave: Number(octave.value) }); this.report = null; this.refresh(); });
-    const keyReady = !!this.app.prefs.apiKey.trim();
+    const keyReady = !!GRADING_SERVICE || !!this.app.prefs.apiKey.trim();
     const upload = h('section', { class: 'card' },
       h('h2', {}, 'Upload your practice'),
       h('label', { class: 'field col' }, h('span', {}, 'Lesson'), lesson),
@@ -132,7 +135,8 @@ export class RecordingGradeView {
       }
       controller.signal.throwIfAborted();
       progress('AI is reviewing the evidence…');
-      const report = await requestAIGrade(this.app.prefs.apiKey, context, measurements, frames, controller.signal);
+      const service = GRADING_SERVICE && auth.state.user ? { url: GRADING_SERVICE, idToken: await auth.state.user.getIdToken() } : undefined;
+      const report = await requestAIGrade(this.app.prefs.apiKey, context, measurements, frames, controller.signal, service);
       if (this.controller !== controller || controller.signal.aborted) return;
       this.report = report; this.status = 'Review complete. Download it before leaving this page to keep a copy.';
     } catch (error) {

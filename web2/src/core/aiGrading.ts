@@ -43,9 +43,14 @@ export function overallAIGrade(report: AIGrade): number | null {
   return Math.round(report.criteria.reduce((sum, item) => sum + item.score!, 0) / report.criteria.length);
 }
 
-export async function requestAIGrade(apiKey: string, context: GradeContext, measurements: unknown, frames: VideoFrame[], signal: AbortSignal): Promise<AIGrade> {
-  if (!apiKey.trim()) throw new Error('Add your Anthropic API key in Advanced settings to enable AI grading.');
-  const client = new Anthropic({ apiKey: apiKey.trim(), dangerouslyAllowBrowser: true, maxRetries: 0, timeout: 120000 });
+/** A Raaga grading service that forwards to Claude with its own key and records the review. */
+export interface GradingService { url: string; idToken: string }
+
+export async function requestAIGrade(apiKey: string, context: GradeContext, measurements: unknown, frames: VideoFrame[], signal: AbortSignal, service?: GradingService): Promise<AIGrade> {
+  if (!service && !apiKey.trim()) throw new Error('Add your Anthropic API key in Advanced settings to enable AI grading.');
+  const client = service
+    ? new Anthropic({ apiKey: 'raaga-service', baseURL: service.url, defaultHeaders: { 'x-raaga-user': service.idToken }, dangerouslyAllowBrowser: true, maxRetries: 0, timeout: 120000 })
+    : new Anthropic({ apiKey: apiKey.trim(), dangerouslyAllowBrowser: true, maxRetries: 0, timeout: 120000 });
   const content: Anthropic.Messages.ContentBlockParam[] = [{ type: 'text', text: JSON.stringify({ context, rubric: RUBRICS[context.art], measurements }) }];
   for (const frame of frames) content.push({ type: 'text', text: `Frame at ${frame.seconds} seconds` }, { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: frame.jpeg } });
   const response = await client.messages.create({ model: GRADING_MODEL, max_tokens: 3500, system: SYSTEM, messages: [{ role: 'user', content }] }, { signal });
