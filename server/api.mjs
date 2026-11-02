@@ -4,6 +4,7 @@
 import http from 'node:http';
 import { Queue } from 'bullmq';
 import { db, migrate, queueConnection, QUEUE, letter } from './db.mjs';
+import { gradeWithOpenAI } from './openai.mjs';
 
 const queue = new Queue(QUEUE, { connection: queueConnection });
 const PORT = Number(process.env.PORT || 8787);
@@ -45,6 +46,8 @@ http.createServer(async (req, res) => {
       headers: { 'content-type': 'application/json', 'anthropic-version': '2023-06-01', 'x-api-key': process.env.ANTHROPIC_API_KEY },
     });
     status = upstream.status; reply = await upstream.json();
+  } else if (process.env.OPENAI_API_KEY) {
+    ({ status, reply } = await gradeWithOpenAI(body));
   }
   const graded = status === 200 ? scoreOf(reply) : null;
   await db.query(`UPDATE reviews SET status = $2, score = $3, grade = $4, summary = $5, reply = $6, updated_at = now() WHERE id = $1`,
