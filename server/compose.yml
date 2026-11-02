@@ -2,7 +2,7 @@ name: raaga
 services:
   raaga-db:
     image: postgres:17-alpine
-    environment: { POSTGRES_USER: raaga, POSTGRES_PASSWORD: raaga, POSTGRES_DB: raaga }
+    environment: { POSTGRES_USER: raaga, POSTGRES_PASSWORD: "${RAAGA_DB_PASSWORD:?set RAAGA_DB_PASSWORD (see .env.example)}", POSTGRES_DB: raaga }
     ports: ["127.0.0.1:5546:5432"]
   raaga-redis:
     image: redis:7-alpine
@@ -16,9 +16,9 @@ services:
     command: node api.mjs
     restart: on-failure
     volumes: [".:/app:ro"]
-    env_file: [{ path: ../.env.local, required: false }]
+    env_file: [{ path: .env, required: false }]
     environment:
-      DATABASE_URL: postgres://raaga:raaga@raaga-db:5432/raaga
+      DATABASE_URL: postgres://raaga:${RAAGA_DB_PASSWORD}@raaga-db:5432/raaga
       REDIS_URL: redis://raaga-redis:6379
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports: ["127.0.0.1:8787:8787"]
@@ -30,7 +30,7 @@ services:
     restart: on-failure
     volumes: [".:/app:ro"]
     environment:
-      DATABASE_URL: postgres://raaga:raaga@raaga-db:5432/raaga
+      DATABASE_URL: postgres://raaga:${RAAGA_DB_PASSWORD}@raaga-db:5432/raaga
       REDIS_URL: redis://raaga-redis:6379
       SMTP_HOST: raaga-mailpit
       SMTP_PORT: "1025"
