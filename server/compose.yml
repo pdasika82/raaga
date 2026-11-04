@@ -21,6 +21,8 @@ services:
       DATABASE_URL: postgres://raaga:${RAAGA_DB_PASSWORD}@raaga-db:5432/raaga
       REDIS_URL: redis://raaga-redis:6379
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-demo-raaga}
+      FIREBASE_AUTH_EMULATOR_HOST: ${FIREBASE_AUTH_EMULATOR_HOST:-}
     ports: ["127.0.0.1:8787:8787"]
     depends_on: [raaga-db, raaga-redis]
   raaga-worker:

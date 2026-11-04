@@ -5,18 +5,28 @@ import http from 'node:http';
 import { Queue } from 'bullmq';
 import { db, migrate, queueConnection, QUEUE, letter } from './db.mjs';
 import { gradeWithOpenAI } from './openai.mjs';
+import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 const queue = new Queue(QUEUE, { connection: queueConnection });
 const PORT = Number(process.env.PORT || 8787);
 
-// Demo only: emulator ID tokens are unsigned, so the email is read from the payload, not verified.
-function userEmail(req) {
+initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID });
+
+/** The signed-in student's email, from a Firebase ID token the server verifies (issuer, audience, expiry,
+ *  and the signature outside the auth emulator). A hand-written token gets null. */
+async function userEmail(req) {
   const token = (req.headers['x-raaga-user'] || '').toString();
-  try { return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).email || null; } catch { return null; }
+  try { return (await getAuth().verifyIdToken(token)).email || null; } catch { return null; }
 }
 
-function contextOf(body) {
-  try { return JSON.parse(body.messages[0].content[0].text).context || {}; } catch { return {}; }
+/** The page refuses a recording with no voice; the server must too, or a direct call grades it anyway. */
+function hasVoice(measurements) {
+  return measurements?.voicedSeconds > 0.3 && measurements?.overtones >= 0.05;
+}
+
+function requestOf(body) {
+  try { return JSON.parse(body.messages[0].content[0].text); } catch { return {}; }
 }
 
 /** Average of the rubric scores the model returned, or null when any criterion was not assessed. */
@@ -35,10 +45,14 @@ const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers
 http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
   if (req.method !== 'POST' || !req.url.endsWith('/v1/messages')) { res.writeHead(404, cors); return res.end(); }
-  const email = userEmail(req);
+  const email = await userEmail(req);
   if (!email) { res.writeHead(401, { ...cors, 'content-type': 'application/json' }); return res.end('{"type":"error","error":{"type":"authentication_error","message":"sign in first"}}'); }
   const body = JSON.parse(await new Promise(r => { let s = ''; req.on('data', c => s += c); req.on('end', () => r(s)); }));
-  const context = contextOf(body);
+  const { context = {}, measurements } = requestOf(body);
+  if (context.art === 'raaga' && !hasVoice(measurements)) {
+    res.writeHead(422, { ...cors, 'content-type': 'application/json' });
+    return res.end('{"type":"error","error":{"type":"invalid_request_error","message":"No clear singing was detected, so this recording was not graded."}}');
+  }
   const { rows: [review] } = await db.query(`INSERT INTO reviews (user_email, lesson, recording, status) VALUES ($1, $2, $3, 'grading') RETURNING id`, [email, context.lesson || 'unknown', context.recording || null]);
   let status = 502, reply = { type: 'error', error: { type: 'api_error', message: 'grading is not configured on this server' } };
   if (process.env.ANTHROPIC_API_KEY) {

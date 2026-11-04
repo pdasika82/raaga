@@ -129,7 +129,7 @@ export class RecordingGradeView {
         const targets = parseSequence(music.sequence || '').map(token => ({ token: token.raw, midi: tokenMidi(token, this.scale, start) ?? start }));
         const comparison = targets.length ? compareFree(report.events.map(event => ({ midi: event.midi + event.meanCents / 100, at: event.start })), targets) : null;
         measurements = { scale: this.scale.name, tonic: this.app.prefs.tonic, startingMidi: start, a4: this.app.prefs.a4,
-          voicedSeconds: report.voicedSeconds, within20: report.within20, within50: report.within50, scaleToneFraction: report.scaleToneFraction,
+          voicedSeconds: report.voicedSeconds, overtones: evidence.overtones, within20: report.within20, within50: report.within50, scaleToneFraction: report.scaleToneFraction,
           meanAbsCents: report.meanAbsCents, stabilityCents: report.stabilityCents, events: report.events,
           targets: comparison ? toTargetMarks(comparison, 1) : [], caveat: 'Monophonic pitch detection. Sequence alignment assumes one pass; repeated phrases, accompaniment and fast ornamentation can reduce reliability. Target matchedAt values are alignment markers, not precise observed timings; use event start times for citations.' };
       } else {
