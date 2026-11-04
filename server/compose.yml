@@ -1,0 +1,39 @@
+name: raaga
+services:
+  raaga-db:
+    image: postgres:17-alpine
+    environment: { POSTGRES_USER: raaga, POSTGRES_PASSWORD: "${RAAGA_DB_PASSWORD:?set RAAGA_DB_PASSWORD (see .env.example)}", POSTGRES_DB: raaga }
+    ports: ["127.0.0.1:5546:5432"]
+  raaga-redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:6390:6379"]
+  raaga-mailpit:
+    image: axllent/mailpit:v1.20
+    ports: ["127.0.0.1:8026:8025", "127.0.0.1:1026:1025"]
+  raaga-api:
+    image: node:22-alpine
+    working_dir: /app
+    command: node api.mjs
+    restart: on-failure
+    volumes: [".:/app:ro"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATABASE_URL: postgres://raaga:${RAAGA_DB_PASSWORD}@raaga-db:5432/raaga
+      REDIS_URL: redis://raaga-redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-demo-raaga}
+      FIREBASE_AUTH_EMULATOR_HOST: ${FIREBASE_AUTH_EMULATOR_HOST:-}
+    ports: ["127.0.0.1:8787:8787"]
+    depends_on: [raaga-db, raaga-redis]
+  raaga-worker:
+    image: node:22-alpine
+    working_dir: /app
+    command: node worker.mjs
+    restart: on-failure
+    volumes: [".:/app:ro"]
+    environment:
+      DATABASE_URL: postgres://raaga:${RAAGA_DB_PASSWORD}@raaga-db:5432/raaga
+      REDIS_URL: redis://raaga-redis:6379
+      SMTP_HOST: raaga-mailpit
+      SMTP_PORT: "1025"
+    depends_on: [raaga-db, raaga-redis, raaga-mailpit]

@@ -15,6 +15,11 @@ import { exampleSearch } from './examples';
 import { formatTime, h } from './dom';
 import type { App } from './app';
 
+/** Set for a deployment with a Raaga grading service; otherwise grading calls Claude with the learner's key. */
+const GRADING_SERVICE = (import.meta.env.VITE_RAAGA_API as string | undefined)?.trim() || '';
+/** Least overtone share a sung note shows; a pure generated tone measures ~0. */
+const MIN_OVERTONE_SHARE = 0.05;
+
 export class RecordingGradeView {
   readonly el = h('div', { class: 'arts-page recording-grade-page' });
   private art: Art = 'raaga';
@@ -79,7 +84,7 @@ export class RecordingGradeView {
     tonic.addEventListener('change', () => { this.app.update({ tonic: Number(tonic.value) }); this.report = null; this.refresh(); });
     const octave = h('select', { class: 'select', 'aria-label': 'Recording starting octave', disabled: busy }, ...[2, 3, 4, 5].map(value => h('option', { value, selected: value === this.app.prefs.saOctave }, String(value))));
     octave.addEventListener('change', () => { this.app.update({ saOctave: Number(octave.value) }); this.report = null; this.refresh(); });
-    const keyReady = !!this.app.prefs.apiKey.trim();
+    const keyReady = !!GRADING_SERVICE || !!this.app.prefs.apiKey.trim();
     const upload = h('section', { class: 'card' },
       h('h2', {}, 'Upload your practice'),
       h('label', { class: 'field col' }, h('span', {}, 'Lesson'), lesson),
@@ -111,19 +116,20 @@ export class RecordingGradeView {
     const progress = (message: string) => { if (this.controller === controller) { this.status = message; this.statusEl.textContent = message; } };
     try {
       const music = practiceById(this.lessonId), dance = danceLesson(this.lessonId);
-      const context: GradeContext = { art: this.art, lesson: this.art === 'raaga' ? music.title : dance.title, instructions: this.art === 'raaga' ? music.instructions : dance.task, teacherNote: this.teacherNote, duration: 0 };
+      const context: GradeContext = { art: this.art, lesson: this.art === 'raaga' ? music.title : dance.title, instructions: this.art === 'raaga' ? music.instructions : dance.task, teacherNote: this.teacherNote, duration: 0, recording: this.file.name };
       let measurements: unknown = null;
       let frames: Awaited<ReturnType<typeof videoEvidence>>['frames'] = [];
       if (this.art === 'raaga') {
         const evidence = await audioEvidence(this.file, controller.signal, progress);
         context.duration = evidence.duration;
         const report = analyze(evidence.samples, this.scale, this.app.prefs.tonic, this.app.prefs.a4, { totalSeconds: evidence.duration });
-        if (!hasVoice(report)) throw new Error('No clear singing was detected. Try a louder solo voice recording; no AI request was sent.');
+        // A voice carries overtones; a generated tone has a steady pitch and none (it passed as singing).
+        if (!hasVoice(report) || evidence.overtones < MIN_OVERTONE_SHARE) throw new Error('No clear singing was detected. Try a louder solo voice recording; no AI request was sent.');
         const start = startingMidi(this.app.prefs.tonic, this.app.prefs.saOctave);
         const targets = parseSequence(music.sequence || '').map(token => ({ token: token.raw, midi: tokenMidi(token, this.scale, start) ?? start }));
         const comparison = targets.length ? compareFree(report.events.map(event => ({ midi: event.midi + event.meanCents / 100, at: event.start })), targets) : null;
         measurements = { scale: this.scale.name, tonic: this.app.prefs.tonic, startingMidi: start, a4: this.app.prefs.a4,
-          voicedSeconds: report.voicedSeconds, within20: report.within20, within50: report.within50, scaleToneFraction: report.scaleToneFraction,
+          voicedSeconds: report.voicedSeconds, overtones: evidence.overtones, within20: report.within20, within50: report.within50, scaleToneFraction: report.scaleToneFraction,
           meanAbsCents: report.meanAbsCents, stabilityCents: report.stabilityCents, events: report.events,
           targets: comparison ? toTargetMarks(comparison, 1) : [], caveat: 'Monophonic pitch detection. Sequence alignment assumes one pass; repeated phrases, accompaniment and fast ornamentation can reduce reliability. Target matchedAt values are alignment markers, not precise observed timings; use event start times for citations.' };
       } else {
@@ -132,7 +138,8 @@ export class RecordingGradeView {
       }
       controller.signal.throwIfAborted();
       progress('AI is reviewing the evidence…');
-      const report = await requestAIGrade(this.app.prefs.apiKey, context, measurements, frames, controller.signal);
+      const service = GRADING_SERVICE && auth.state.user ? { url: GRADING_SERVICE, idToken: await auth.state.user.getIdToken() } : undefined;
+      const report = await requestAIGrade(this.app.prefs.apiKey, context, measurements, frames, controller.signal, service);
       if (this.controller !== controller || controller.signal.aborted) return;
       this.report = report; this.status = 'Review complete. Download it before leaving this page to keep a copy.';
     } catch (error) {
